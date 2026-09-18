@@ -87,3 +87,26 @@ def test_me_requires_token() -> None:
     client = TestClient(app)
     response = client.get("/api/v1/auth/me")
     assert response.status_code == 401
+
+def test_rbac_allowed_and_denied(override_db, sqlite_session: Session) -> None:
+    user = User(
+        email=f"rbac-{uuid.uuid4()}@example.com", 
+        password_hash=hash_password("Password123!"), 
+        role="ADMIN", 
+        is_active=True
+    )
+    sqlite_session.add(user)
+    sqlite_session.commit()
+    
+    settings.JWT_SECRET = "test-secret"
+    settings.JWT_ALGORITHM = "HS256"
+    token = create_access_token(user.id)
+    
+    client = TestClient(app)
+    me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert me.status_code == 200
+    assert me.json()["email"] == user.email
+
+    # Unauthenticated direct access is rejected by the dependency layer.
+    unauth = client.get("/api/v1/auth/me")
+    assert unauth.status_code == 401

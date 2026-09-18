@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { api, AuthUserResponse } from "@/lib/api";
+import Navbar from "../components/Navbar";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -35,12 +36,6 @@ export default function DashboardPage() {
       });
   }, [router]);
 
-  function handleLogout() {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("token_type");
-    router.replace("/login");
-  }
-
   if (loading) {
     return <main style={{ padding: 32 }}>Loading user profile...</main>;
   }
@@ -51,12 +46,7 @@ export default function DashboardPage() {
 
   return (
     <main style={{ maxWidth: 900, margin: "0 auto", padding: 32 }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <h1 style={{ margin: 0 }}>Dashboard</h1>
-        <button onClick={handleLogout} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #d1d5db", background: "#fff", cursor: "pointer" }}>
-          Logout
-        </button>
-      </header>
+      <Navbar />
 
       <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 12px 30px rgba(15, 23, 42, 0.08)" }}>
         <h2 style={{ marginTop: 0 }}>Authenticated user</h2>

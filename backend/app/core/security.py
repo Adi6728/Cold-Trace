@@ -15,15 +15,18 @@ from app.database.session import get_db
 from app.models.user import User
 
 bearer_scheme = HTTPBearer(auto_error=False)
+DEVELOPMENT_JWT_SECRET = "coldchain-trace-development-secret-key"
 
 
 def get_jwt_secret() -> str:
     secret = (settings.JWT_SECRET or "").strip()
-    if not secret:
-        raise ValueError(
-            "JWT_SECRET is not configured. Set JWT_SECRET in the environment or .env before starting the API."
-        )
-    return secret
+    if secret:
+        return secret
+    if settings.ENVIRONMENT.lower() in {"development", "test"}:
+        return DEVELOPMENT_JWT_SECRET
+    raise ValueError(
+        "JWT_SECRET is not configured. Set JWT_SECRET in the environment or .env before starting the API."
+    )
 
 
 def hash_password(password: str) -> str:

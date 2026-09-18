@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
     DATABASE_URL: str = Field(default="")
+    ENVIRONMENT: str = "development"
     JWT_SECRET: str = ""
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
@@ -33,6 +34,8 @@ class Settings(BaseSettings):
                 f"postgresql+psycopg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"
                 f"{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
             )
+        if self.ENVIRONMENT.lower() == "production" and not self.JWT_SECRET.strip():
+            raise ValueError("JWT_SECRET must be explicitly configured when ENVIRONMENT=production.")
 
 
 settings = Settings()

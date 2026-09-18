@@ -10,9 +10,104 @@ export type AuthUserResponse = {
   id: number;
   email: string;
   role: string;
+  organization_id?: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+};
+
+export type Product = {
+  id: number;
+  name: string;
+  description?: string;
+  manufacturer_id: number;
+  storage_min_temp: number;
+  storage_max_temp: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProductCreate = {
+  name: string;
+  description?: string;
+  manufacturer_id: number;
+  storage_min_temp: number;
+  storage_max_temp: number;
+};
+
+export type Batch = {
+  id: number;
+  product_id: number;
+  batch_number: string;
+  manufactured_at: string;
+  expiry_date: string;
+  quantity: number;
+  status: string;
+  created_at: string;
+};
+
+export type BatchCreate = {
+  product_id: number;
+  batch_number: string;
+  manufactured_at: string;
+  expiry_date: string;
+  quantity: number;
+  status?: string;
+};
+
+export type Shipment = {
+  id: number;
+  batch_id: number;
+  origin_organization_id: number;
+  destination_organization_id: number;
+  status: string;
+  started_at?: string;
+  expected_delivery_at?: string;
+  delivered_at?: string;
+  created_at: string;
+};
+
+export type ShipmentCreate = {
+  batch_id: number;
+  origin_organization_id: number;
+  destination_organization_id: number;
+  status?: string;
+  started_at?: string;
+  expected_delivery_at?: string;
+};
+
+export type ShipmentEvent = {
+  id: number;
+  shipment_id: number;
+  event_type: string;
+  description?: string;
+  location?: string;
+  occurred_at: string;
+  created_at: string;
+};
+
+export type ShipmentEventCreate = {
+  event_type: string;
+  description?: string;
+  location?: string;
+  occurred_at: string;
+};
+
+export type CustodyTransfer = {
+  id: number;
+  shipment_id: number;
+  from_organization_id: number;
+  to_organization_id: number;
+  transferred_at: string;
+  notes?: string;
+  created_at: string;
+};
+
+export type CustodyTransferCreate = {
+  from_organization_id: number;
+  to_organization_id: number;
+  transferred_at: string;
+  notes?: string;
 };
 
 function getAuthHeaders(token?: string): HeadersInit {
@@ -57,4 +152,48 @@ export const api = {
       body: JSON.stringify({ email, password }),
     }),
   me: (token: string) => apiRequest<AuthUserResponse>("/api/v1/auth/me", { token }),
+  
+  // Products
+  getProducts: (token: string) => apiRequest<Product[]>("/api/v1/products", { token }),
+  createProduct: (token: string, payload: ProductCreate) =>
+    apiRequest<Product>("/api/v1/products", {
+      token,
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  // Batches
+  getBatches: (token: string) => apiRequest<Batch[]>("/api/v1/batches", { token }),
+  createBatch: (token: string, payload: BatchCreate) =>
+    apiRequest<Batch>("/api/v1/batches", {
+      token,
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  // Shipments
+  getShipments: (token: string) => apiRequest<Shipment[]>("/api/v1/shipments", { token }),
+  getShipment: (token: string, id: number) => apiRequest<Shipment>(`/api/v1/shipments/${id}`, { token }),
+  createShipment: (token: string, payload: ShipmentCreate) =>
+    apiRequest<Shipment>("/api/v1/shipments", {
+      token,
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getShipmentEvents: (token: string, shipmentId: number) =>
+    apiRequest<ShipmentEvent[]>(`/api/v1/shipments/${shipmentId}/events`, { token }),
+  createShipmentEvent: (token: string, shipmentId: number, payload: ShipmentEventCreate) =>
+    apiRequest<ShipmentEvent>(`/api/v1/shipments/${shipmentId}/events`, {
+      token,
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getCustodyTransfers: (token: string, shipmentId: number) =>
+    apiRequest<CustodyTransfer[]>(`/api/v1/shipments/${shipmentId}/custody`, { token }),
+  createCustodyTransfer: (token: string, shipmentId: number, payload: CustodyTransferCreate) =>
+    apiRequest<CustodyTransfer>(`/api/v1/shipments/${shipmentId}/custody`, {
+      token,
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };
