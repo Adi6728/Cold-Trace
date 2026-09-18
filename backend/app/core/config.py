@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     DEV_ADMIN_EMAIL: str = ""
     DEV_ADMIN_PASSWORD: str = ""
+    
+    MQTT_BROKER_HOST: str = "localhost"
+    MQTT_BROKER_PORT: int = 1883
 
     def model_post_init(self, __context: object) -> None:
         if not self.DATABASE_URL:

@@ -20,5 +20,15 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: coldchain-trace-mosquitto
+    ports:
+      - "1883:1883"
+    command: mosquitto -c /mosquitto-no-auth.conf
+    # We use a simple config overriding auth for local dev
+    environment:
+      - TZ=UTC
+
 volumes:
   postgres_data:

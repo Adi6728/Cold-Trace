@@ -5,6 +5,9 @@ from typing import TYPE_CHECKING, Optional
 from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.database.base import Base
 
 if TYPE_CHECKING:
@@ -12,6 +15,8 @@ if TYPE_CHECKING:
     from app.models.custody_transfer import CustodyTransfer
     from app.models.organization import Organization
     from app.models.shipment_event import ShipmentEvent
+    from app.models.sensor import Sensor
+    from app.models.sensor_reading import SensorReading
 
 
 class ShipmentStatus(str, Enum):
@@ -40,3 +45,5 @@ class Shipment(Base):
     destination_organization: Mapped["Organization"] = relationship(back_populates="destination_shipments", foreign_keys="Shipment.destination_organization_id")
     events: Mapped[list["ShipmentEvent"]] = relationship(back_populates="shipment", cascade="all, delete-orphan")
     custody_transfers: Mapped[list["CustodyTransfer"]] = relationship(back_populates="shipment", cascade="all, delete-orphan")
+    sensors: Mapped[list["Sensor"]] = relationship(back_populates="shipment", cascade="all, delete-orphan")
+    sensor_readings: Mapped[list["SensorReading"]] = relationship(back_populates="shipment", cascade="all, delete-orphan")

@@ -5,14 +5,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from contextlib import asynccontextmanager
+
 from app.api.v1.endpoints.auth import router as auth_router
 from app.api.v1.endpoints.batches import router as batches_router
 from app.api.v1.endpoints.custody import router as custody_router
 from app.api.v1.endpoints.products import router as products_router
 from app.api.v1.endpoints.shipments import router as shipments_router
+from app.api.v1.endpoints.sensors import router as sensors_router
+from app.core.mqtt import start_mqtt, stop_mqtt
 from app.database.session import get_db
 
-app = FastAPI(title="ColdChain Trace Backend")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    start_mqtt()
+    yield
+    stop_mqtt()
+
+app = FastAPI(title="ColdChain Trace Backend", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"],
@@ -25,6 +35,7 @@ app.include_router(products_router)
 app.include_router(batches_router)
 app.include_router(shipments_router)
 app.include_router(custody_router)
+app.include_router(sensors_router)
 
 
 @app.get("/health")

@@ -13,6 +13,7 @@ if str(BACKEND_ROOT) not in sys.path:
 
 from app.core.config import settings
 from app.database.base import Base
+import app.models  # noqa: F401
 
 config = context.config
 
