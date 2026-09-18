@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, Depends
+from fastapi import Depends, FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.api.v1.endpoints.auth import router as auth_router
 from app.database.session import get_db
 
 app = FastAPI(title="ColdChain Trace Backend")
+app.include_router(auth_router)
 
 
 @app.get("/health")
