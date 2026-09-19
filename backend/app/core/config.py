@@ -36,6 +36,18 @@ class Settings(BaseSettings):
     ALERT_MEDIUM_DEVIATION: float = 0.5
     ALERT_DURATION_MINUTES: int = 15
     
+    # Fabric Configuration
+    FABRIC_CLI_BIN_DIR: str = ""
+    FABRIC_CFG_PATH: str = ""
+    FABRIC_ORDERER_URL: str = "localhost:7050"
+    FABRIC_ORDERER_TLS_CA: str = ""
+    FABRIC_PEER_ADDRESSES: str = "localhost:7051,localhost:9051"
+    FABRIC_PEER_TLS_CAS: str = ""
+    FABRIC_MSP_DIR: str = ""
+    FABRIC_MSP_ID: str = "Org1MSP"
+    FABRIC_CHANNEL: str = "tracechannel"
+    FABRIC_CHAINCODE: str = "traceability"
+    
     def model_post_init(self, __context: object) -> None:
 
         if not self.DATABASE_URL:
