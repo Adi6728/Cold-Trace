@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import styles from "./Sidebar.module.css";
+import { api, AuthUserResponse } from "@/lib/api";
+import { canAccessRoute } from "@/lib/rbac";
 
 const MENU_ITEMS = [
   { href: "/dashboard", label: "Dashboard", section: "Main" },
@@ -17,8 +20,24 @@ const MENU_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [user, setUser] = useState<AuthUserResponse | null>(null);
 
-  const groupedItems = MENU_ITEMS.reduce((acc, item) => {
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    
+    api.me(token)
+      .then(setUser)
+      .catch(() => {
+        // Ignore error here, Header handles logout
+      });
+  }, []);
+
+  const allowedItems = MENU_ITEMS.filter(item => 
+    item.disabled || canAccessRoute(user?.role, item.href)
+  );
+
+  const groupedItems = allowedItems.reduce((acc, item) => {
     if (!acc[item.section]) {
       acc[item.section] = [];
     }

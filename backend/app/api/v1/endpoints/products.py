@@ -20,6 +20,8 @@ def list_products_endpoint(
     current_user: User = Depends(get_current_user),
     organization_id: int | None = Query(default=None),
 ) -> list[Product]:
+    if current_user.role in {UserRole.LOGISTICS, UserRole.WAREHOUSE}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to list products.")
     if current_user.organization_id is None and current_user.role is not UserRole.ADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="An organization assignment is required.")
     if current_user.organization_id is not None and organization_id is not None and current_user.organization_id != organization_id:
@@ -32,6 +34,8 @@ def list_products_endpoint(
 
 @router.get("/products/{product_id}", response_model=ProductRead)
 def get_product_endpoint(product_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> Product:
+    if current_user.role in {UserRole.LOGISTICS, UserRole.WAREHOUSE}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to view products.")
     if current_user.organization_id is None and current_user.role is not UserRole.ADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions.")
     return get_product_for_user(db, current_user, product_id)

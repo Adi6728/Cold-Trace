@@ -3,7 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, Batch, Product, AuthUserResponse } from "@/lib/api";
-
+import { canPerformAction } from "@/lib/rbac";
+import tableStyles from "../../components/Table.module.css";
+import formStyles from "../../components/Form.module.css";
+import badgeStyles from "../../components/Badge.module.css";
 
 export default function BatchesPage() {
   const router = useRouter();
@@ -13,6 +16,9 @@ export default function BatchesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // filtering
+  const [filterProductId, setFilterProductId] = useState<number | null>(null);
+
   // form state
   const [productId, setProductId] = useState<number | "">("");
   const [batchNumber, setBatchNumber] = useState("");
@@ -20,6 +26,8 @@ export default function BatchesPage() {
   const [manufacturedAt, setManufacturedAt] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -28,6 +36,14 @@ export default function BatchesPage() {
       return;
     }
     
+    // Check if there is a product_id filter in the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const prodIdParam = urlParams.get("product_id");
+    if (prodIdParam) {
+      setFilterProductId(Number(prodIdParam));
+      setProductId(Number(prodIdParam)); // pre-select in form
+    }
+
     Promise.all([api.me(token), api.getBatches(token), api.getProducts(token)])
       .then(([userData, batchesData, productsData]) => {
         setUser(userData);
@@ -45,6 +61,7 @@ export default function BatchesPage() {
   async function handleCreateBatch(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
+    setFormSuccess(null);
     
     if (!productId || !quantity || quantity <= 0) {
       setFormError("Please fill out all required fields with valid values.");
@@ -54,6 +71,7 @@ export default function BatchesPage() {
     const token = localStorage.getItem("access_token");
     if (!token || !user) return;
 
+    setIsSubmitting(true);
     try {
       const newBatch = await api.createBatch(token, {
         product_id: Number(productId),
@@ -63,105 +81,186 @@ export default function BatchesPage() {
         quantity: Number(quantity),
       });
       setBatches([...batches, newBatch]);
-      setProductId("");
+      setFormSuccess(`Batch "${newBatch.batch_number}" created successfully!`);
+      
+      // Reset form (keep productId if it was filtered)
+      if (!filterProductId) setProductId("");
       setBatchNumber("");
       setQuantity("");
       setManufacturedAt("");
       setExpiryDate("");
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Failed to create batch.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
+
+  const getProductName = (id: number) => {
+    const p = products.find(prod => prod.id === id);
+    return p ? p.name : `Unknown (ID: ${id})`;
+  };
+
+  const getStatusBadge = (batch: Batch) => {
+    // If backend already marked it DELIVERED or COMPLETED etc, we could use that.
+    // But typically batches are "ACTIVE" or "EXPIRED" for UI display.
+    const isExpired = new Date(batch.expiry_date) < new Date();
+    
+    if (isExpired) {
+      return <span className={`${badgeStyles.badge} ${badgeStyles.expired}`}>Expired</span>;
+    }
+    return <span className={`${badgeStyles.badge} ${badgeStyles.active}`}>Active</span>;
+  };
+
+  const displayedBatches = filterProductId 
+    ? batches.filter(b => b.product_id === filterProductId)
+    : batches;
 
   if (loading) {
     return <main style={{ padding: 32 }}>Loading batches...</main>;
   }
 
   if (error) {
-    return <main style={{ padding: 32, color: "#991b1b" }}>{error}</main>;
+    return (
+      <main style={{ padding: 32 }}>
+        <div className={formStyles.errorText}>{error}</div>
+      </main>
+    );
   }
 
   return (
-    <main style={{ maxWidth: 900, margin: "0 auto", padding: 32 }}>
-
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, marginTop: 24 }}>
-        <h1 style={{ margin: 0 }}>Batches</h1>
+    <main style={{ padding: 32, maxWidth: 1200, margin: "0 auto" }}>
+      <div className={tableStyles.tableHeader}>
+        <h1 className={tableStyles.tableTitle}>Batches Management</h1>
+        {filterProductId && (
+          <button 
+            onClick={() => {
+              setFilterProductId(null);
+              setProductId("");
+              window.history.pushState({}, '', '/batches');
+            }}
+            className={formStyles.button} 
+            style={{ background: "#64748b" }}
+          >
+            Clear Filter
+          </button>
+        )}
       </div>
 
-      <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 12px 30px rgba(15, 23, 42, 0.08)", marginBottom: 32 }}>
-        <h2 style={{ marginTop: 0 }}>Create Batch</h2>
-        <form onSubmit={handleCreateBatch} style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 400 }}>
-          {formError && <div style={{ color: "#991b1b", fontSize: 14 }}>{formError}</div>}
-          
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <label>Product</label>
-            <select required value={productId} onChange={(e) => setProductId(e.target.value === "" ? "" : Number(e.target.value))} style={{ padding: 8, borderRadius: 6, border: "1px solid #d1d5db" }}>
-              <option value="" disabled>Select a product...</option>
-              {products.map(p => (
-                <option key={p.id} value={p.id}>{p.name} (ID: {p.id})</option>
-              ))}
-            </select>
-          </div>
+      {canPerformAction(user?.role, "CREATE_BATCH") && (
+        <div className={formStyles.formContainer}>
+          <h2 className={formStyles.formTitle}>Register New Batch</h2>
+          <form onSubmit={handleCreateBatch} className={formStyles.form}>
+            {formError && <div className={formStyles.errorText}>{formError}</div>}
+            {formSuccess && <div className={formStyles.successText}>{formSuccess}</div>}
+            
+            <div className={formStyles.formRow}>
+              <div className={formStyles.formGroup}>
+                <label className={formStyles.label}>Product *</label>
+                <select 
+                  required 
+                  className={formStyles.select}
+                  value={productId} 
+                  onChange={(e) => setProductId(e.target.value === "" ? "" : Number(e.target.value))}
+                  disabled={filterProductId !== null}
+                >
+                  <option value="" disabled>Select a product...</option>
+                  {products.map(p => (
+                    <option key={p.id} value={p.id}>{p.name} (ID: {p.id})</option>
+                  ))}
+                </select>
+              </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <label>Batch Number</label>
-            <input required value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} style={{ padding: 8, borderRadius: 6, border: "1px solid #d1d5db" }} />
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <label>Quantity</label>
-            <input required type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value === "" ? "" : Number(e.target.value))} style={{ padding: 8, borderRadius: 6, border: "1px solid #d1d5db" }} />
-          </div>
-
-          <div style={{ display: "flex", gap: 16 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-              <label>Manufactured At</label>
-              <input required type="datetime-local" value={manufacturedAt} onChange={(e) => setManufacturedAt(e.target.value)} style={{ padding: 8, borderRadius: 6, border: "1px solid #d1d5db" }} />
+              <div className={formStyles.formGroup}>
+                <label className={formStyles.label}>Batch Number *</label>
+                <input 
+                  required 
+                  className={formStyles.input}
+                  placeholder="e.g. BATCH-2024-001"
+                  value={batchNumber} 
+                  onChange={(e) => setBatchNumber(e.target.value)} 
+                />
+              </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-              <label>Expiry Date</label>
-              <input required type="datetime-local" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} style={{ padding: 8, borderRadius: 6, border: "1px solid #d1d5db" }} />
+
+            <div className={formStyles.formRow}>
+              <div className={formStyles.formGroup}>
+                <label className={formStyles.label}>Quantity *</label>
+                <input 
+                  required 
+                  type="number" 
+                  min="1" 
+                  className={formStyles.input}
+                  placeholder="Number of units"
+                  value={quantity} 
+                  onChange={(e) => setQuantity(e.target.value === "" ? "" : Number(e.target.value))} 
+                />
+              </div>
+              
+              <div className={formStyles.formGroup}>
+                <label className={formStyles.label}>Manufacture Date *</label>
+                <input 
+                  required 
+                  type="datetime-local" 
+                  className={formStyles.input}
+                  value={manufacturedAt} 
+                  onChange={(e) => setManufacturedAt(e.target.value)} 
+                />
+              </div>
+
+              <div className={formStyles.formGroup}>
+                <label className={formStyles.label}>Expiry Date *</label>
+                <input 
+                  required 
+                  type="datetime-local" 
+                  className={formStyles.input}
+                  value={expiryDate} 
+                  onChange={(e) => setExpiryDate(e.target.value)} 
+                />
+              </div>
             </div>
-          </div>
 
-          <button type="submit" style={{ padding: "10px 14px", borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer", fontWeight: "bold" }}>
-            Create Batch
-          </button>
-        </form>
-      </section>
+            <button type="submit" className={formStyles.button} disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Create Batch"}
+            </button>
+          </form>
+        </div>
+      )}
 
-      <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 12px 30px rgba(15, 23, 42, 0.08)" }}>
-        <h2 style={{ marginTop: 0 }}>Batch List</h2>
-        {batches.length === 0 ? (
-          <p>No batches found.</p>
+      <div className={tableStyles.tableContainer}>
+        <h2 className={tableStyles.tableTitle} style={{ marginBottom: 20 }}>
+          {filterProductId ? `Batches for Product ID: ${filterProductId}` : "All Batches"}
+        </h2>
+        
+        {displayedBatches.length === 0 ? (
+          <div className={tableStyles.emptyState}>No batches found.</div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+          <table className={tableStyles.table}>
             <thead>
-              <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                <th style={{ padding: 12 }}>ID</th>
-                <th style={{ padding: 12 }}>Product ID</th>
-                <th style={{ padding: 12 }}>Batch #</th>
-                <th style={{ padding: 12 }}>Quantity</th>
-                <th style={{ padding: 12 }}>Status</th>
-                <th style={{ padding: 12 }}>Expiry</th>
+              <tr>
+                <th>Batch #</th>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Status</th>
+                <th>Manufactured</th>
+                <th>Expiry Date</th>
               </tr>
             </thead>
             <tbody>
-              {batches.map((b) => (
-                <tr key={b.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                  <td style={{ padding: 12 }}>{b.id}</td>
-                  <td style={{ padding: 12 }}>{b.product_id}</td>
-                  <td style={{ padding: 12 }}>{b.batch_number}</td>
-                  <td style={{ padding: 12 }}>{b.quantity}</td>
-                  <td style={{ padding: 12 }}>{b.status}</td>
-                  <td style={{ padding: 12 }}>{new Date(b.expiry_date).toLocaleDateString()}</td>
+              {displayedBatches.map((b) => (
+                <tr key={b.id}>
+                  <td style={{ fontWeight: 500 }}>{b.batch_number}</td>
+                  <td>{getProductName(b.product_id)}</td>
+                  <td>{b.quantity}</td>
+                  <td>{getStatusBadge(b)}</td>
+                  <td>{new Date(b.manufactured_at).toLocaleDateString()}</td>
+                  <td>{new Date(b.expiry_date).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-      </section>
+      </div>
     </main>
   );
 }
