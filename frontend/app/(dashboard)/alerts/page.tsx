@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, Alert } from "@/lib/api";
-import Navbar from "../components/Navbar";
+
 
 export default function AlertsPage() {
   const router = useRouter();
@@ -81,7 +81,7 @@ export default function AlertsPage() {
 
   return (
     <main style={{ maxWidth: 1000, margin: "0 auto", padding: 32 }}>
-      <Navbar />
+
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, marginTop: 24 }}>
         <h1 style={{ margin: 0 }}>Alerts</h1>

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, Shipment, ShipmentEvent, CustodyTransfer, AuthUserResponse, Alert } from "@/lib/api";
-import Navbar from "../../components/Navbar";
+
 
 export default function ShipmentDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -114,7 +114,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
 
   return (
     <main style={{ maxWidth: 900, margin: "0 auto", padding: 32 }}>
-      <Navbar />
+
 
       <h1 style={{ marginTop: 24, marginBottom: 24 }}>Shipment #{shipment.id} Details</h1>
 

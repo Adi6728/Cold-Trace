@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, Sensor, SensorReading } from "@/lib/api";
-import Navbar from "../../components/Navbar";
+
 
 export default function SensorDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -47,7 +47,7 @@ export default function SensorDetailPage({ params }: { params: { id: string } })
 
   return (
     <main style={{ maxWidth: 900, margin: "0 auto", padding: 32 }}>
-      <Navbar />
+
 
       <h1 style={{ marginTop: 24, marginBottom: 24 }}>Sensor #{sensor.id} Details</h1>
 

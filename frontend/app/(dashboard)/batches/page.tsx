@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, Batch, Product, AuthUserResponse } from "@/lib/api";
-import Navbar from "../components/Navbar";
+
 
 export default function BatchesPage() {
   const router = useRouter();
@@ -83,7 +83,7 @@ export default function BatchesPage() {
 
   return (
     <main style={{ maxWidth: 900, margin: "0 auto", padding: 32 }}>
-      <Navbar />
+
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, marginTop: 24 }}>
         <h1 style={{ margin: 0 }}>Batches</h1>
