@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.security import get_current_user
 from app.database.session import get_db
 from app.models.user import User
-from app.schemas.sensors import SensorCreate, SensorResponse
+from app.schemas.sensors import SensorCreate, SensorResponse, SensorReadingResponse
 from app.services.sensor_service import SensorService
 
 router = APIRouter(prefix="/api/v1/sensors", tags=["sensors"])
@@ -25,11 +25,12 @@ def create_sensor(
 def get_sensors(
     skip: int = 0,
     limit: int = 100,
+    organization_id: int | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> list[SensorResponse]:
     """Retrieve sensors."""
-    return SensorService.get_sensors(db=db, skip=skip, limit=limit)
+    return SensorService.list_sensors_for_user(db=db, user=current_user, organization_id=organization_id, skip=skip, limit=limit)
 
 
 @router.get("/{sensor_id}", response_model=SensorResponse)
@@ -39,7 +40,16 @@ def get_sensor(
     current_user: User = Depends(get_current_user),
 ) -> SensorResponse:
     """Get sensor by ID."""
-    sensor = SensorService.get_sensor(db=db, sensor_id=sensor_id)
-    if not sensor:
-        raise HTTPException(status_code=404, detail="Sensor not found")
-    return sensor
+    return SensorService.get_sensor_for_user(db=db, user=current_user, sensor_id=sensor_id)
+
+
+@router.get("/{sensor_id}/readings", response_model=list[SensorReadingResponse])
+def get_sensor_readings(
+    sensor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[SensorReadingResponse]:
+    """Get telemetry readings for a sensor."""
+    # First, validate the user has access to this sensor
+    SensorService.get_sensor_for_user(db=db, user=current_user, sensor_id=sensor_id)
+    return SensorService.get_sensor_readings(db=db, sensor_id=sensor_id)

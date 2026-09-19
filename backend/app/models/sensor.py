@@ -10,6 +10,8 @@ from app.database.base import Base
 if TYPE_CHECKING:
     from app.models.shipment import Shipment
     from app.models.sensor_reading import SensorReading
+    from app.models.alert import Alert
+
 
 
 class SensorStatus(str, Enum):
@@ -28,3 +30,5 @@ class Sensor(Base):
 
     shipment: Mapped["Shipment"] = relationship(back_populates="sensors")
     readings: Mapped[list["SensorReading"]] = relationship(back_populates="sensor", cascade="all, delete-orphan")
+    alerts: Mapped[list["Alert"]] = relationship(back_populates="sensor", cascade="all, delete-orphan")
+

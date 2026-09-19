@@ -19,6 +19,8 @@ export default function Navbar() {
           <Link href="/products" style={{ textDecoration: "none", color: "#374151" }}>Products</Link>
           <Link href="/batches" style={{ textDecoration: "none", color: "#374151" }}>Batches</Link>
           <Link href="/shipments" style={{ textDecoration: "none", color: "#374151" }}>Shipments</Link>
+          <Link href="/sensors" style={{ textDecoration: "none", color: "#374151" }}>Sensors</Link>
+          <Link href="/alerts" style={{ textDecoration: "none", color: "#374151" }}>Alerts</Link>
         </nav>
       </div>
       <button onClick={handleLogout} style={{ padding: "8px 12px", borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", cursor: "pointer" }}>

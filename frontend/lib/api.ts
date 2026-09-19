@@ -110,6 +110,37 @@ export type CustodyTransferCreate = {
   notes?: string;
 };
 
+export type Sensor = {
+  id: number;
+  sensor_code: string;
+  shipment_id: number;
+  status: string;
+  created_at: string;
+};
+
+export type SensorReading = {
+  id: number;
+  sensor_id: number;
+  shipment_id: number;
+  temperature: number;
+  humidity?: number;
+  recorded_at: string;
+  received_at: string;
+};
+
+export type Alert = {
+  id: number;
+  shipment_id: number;
+  sensor_id: number;
+  severity: string;
+  status: string;
+  message: string;
+  latest_temperature: number;
+  detected_at: string;
+  acknowledged_at?: string;
+  resolved_at?: string;
+};
+
 function getAuthHeaders(token?: string): HeadersInit {
   const headers: HeadersInit = { "Content-Type": "application/json" };
   if (token) {
@@ -195,5 +226,24 @@ export const api = {
       token,
       method: "POST",
       body: JSON.stringify(payload),
+    }),
+
+  // Sensors
+  getSensors: (token: string) => apiRequest<Sensor[]>("/api/v1/sensors/", { token }),
+  getSensor: (token: string, id: number) => apiRequest<Sensor>(`/api/v1/sensors/${id}`, { token }),
+  getSensorReadings: (token: string, id: number) => apiRequest<SensorReading[]>(`/api/v1/sensors/${id}/readings`, { token }),
+
+  // Alerts
+  getShipmentAlerts: (token: string, shipmentId: number) =>
+    apiRequest<Alert[]>(`/api/v1/shipments/${shipmentId}/alerts`, { token }),
+  acknowledgeAlert: (token: string, alertId: number) =>
+    apiRequest<Alert>(`/api/v1/alerts/${alertId}/acknowledge`, {
+      token,
+      method: "PATCH",
+    }),
+  resolveAlert: (token: string, alertId: number) =>
+    apiRequest<Alert>(`/api/v1/alerts/${alertId}/resolve`, {
+      token,
+      method: "PATCH",
     }),
 };

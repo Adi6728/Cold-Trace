@@ -17,6 +17,8 @@ if TYPE_CHECKING:
     from app.models.shipment_event import ShipmentEvent
     from app.models.sensor import Sensor
     from app.models.sensor_reading import SensorReading
+    from app.models.alert import Alert
+
 
 
 class ShipmentStatus(str, Enum):
@@ -47,3 +49,5 @@ class Shipment(Base):
     custody_transfers: Mapped[list["CustodyTransfer"]] = relationship(back_populates="shipment", cascade="all, delete-orphan")
     sensors: Mapped[list["Sensor"]] = relationship(back_populates="shipment", cascade="all, delete-orphan")
     sensor_readings: Mapped[list["SensorReading"]] = relationship(back_populates="shipment", cascade="all, delete-orphan")
+    alerts: Mapped[list["Alert"]] = relationship(back_populates="shipment", cascade="all, delete-orphan")
+

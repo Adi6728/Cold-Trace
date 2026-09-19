@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api, Shipment, ShipmentEvent, CustodyTransfer, AuthUserResponse } from "@/lib/api";
+import { api, Shipment, ShipmentEvent, CustodyTransfer, AuthUserResponse, Alert } from "@/lib/api";
 import Navbar from "../../components/Navbar";
 
 export default function ShipmentDetailPage({ params }: { params: { id: string } }) {
@@ -13,6 +13,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [events, setEvents] = useState<ShipmentEvent[]>([]);
   const [custodyTransfers, setCustodyTransfers] = useState<CustodyTransfer[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,13 +40,15 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
       api.me(token),
       api.getShipment(token, Number(id)),
       api.getShipmentEvents(token, Number(id)),
-      api.getCustodyTransfers(token, Number(id))
+      api.getCustodyTransfers(token, Number(id)),
+      api.getShipmentAlerts(token, Number(id)).catch(() => [] as Alert[])
     ])
-      .then(([userData, shipmentData, eventsData, custodyData]) => {
+      .then(([userData, shipmentData, eventsData, custodyData, alertsData]) => {
         setUser(userData);
         setShipment(shipmentData);
         setEvents(eventsData);
         setCustodyTransfers(custodyData);
+        setAlerts(alertsData);
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : "Failed to load shipment details.");
@@ -184,6 +187,32 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
                   <div style={{ fontWeight: "bold", marginBottom: 4 }}>Org {ct.from_organization_id} &rarr; Org {ct.to_organization_id}</div>
                   <div>Date: {new Date(ct.transferred_at).toLocaleString()}</div>
                   {ct.notes && <div>Notes: {ct.notes}</div>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+      
+      <div style={{ marginTop: 32 }}>
+        <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 12px 30px rgba(15, 23, 42, 0.08)" }}>
+          <h2 style={{ marginTop: 0 }}>Alerts</h2>
+          {alerts.length === 0 ? <p>No alerts recorded for this shipment.</p> : (
+            <ul style={{ listStyle: "none", padding: 0 }}>
+              {alerts.slice().sort((a, b) => new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime()).map(al => (
+                <li key={al.id} style={{ 
+                  background: al.severity === 'CRITICAL' ? '#fee2e2' : al.severity === 'HIGH' ? '#ffedd5' : '#fef3c7',
+                  padding: 16, borderRadius: 8, marginBottom: 12, border: "1px solid rgba(0,0,0,0.05)" 
+                }}>
+                  <div style={{ fontWeight: "bold", marginBottom: 4, color: al.severity === 'CRITICAL' ? '#991b1b' : al.severity === 'HIGH' ? '#9a3412' : '#92400e' }}>
+                    {al.severity} Alert (Status: {al.status})
+                  </div>
+                  <div>Sensor ID: {al.sensor_id} | Latest Temp: {al.latest_temperature}°C</div>
+                  {al.message && <div style={{ marginTop: 8 }}>Message: {al.message}</div>}
+                  <div style={{ fontSize: 12, marginTop: 8, color: "#4b5563" }}>
+                    Detected: {new Date(al.detected_at).toLocaleString()}
+                    {al.resolved_at && ` | Resolved: ${new Date(al.resolved_at).toLocaleString()}`}
+                  </div>
                 </li>
               ))}
             </ul>

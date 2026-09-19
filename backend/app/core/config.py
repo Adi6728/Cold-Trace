@@ -30,8 +30,14 @@ class Settings(BaseSettings):
     
     MQTT_BROKER_HOST: str = "localhost"
     MQTT_BROKER_PORT: int = 1883
-
+    
+    ALERT_CRITICAL_DEVIATION: float = 5.0
+    ALERT_HIGH_DEVIATION: float = 2.0
+    ALERT_MEDIUM_DEVIATION: float = 0.5
+    ALERT_DURATION_MINUTES: int = 15
+    
     def model_post_init(self, __context: object) -> None:
+
         if not self.DATABASE_URL:
             self.DATABASE_URL = (
                 f"postgresql+psycopg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"
