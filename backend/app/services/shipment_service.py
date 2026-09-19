@@ -71,21 +71,77 @@ def update_shipment(db: Session, shipment: Shipment, payload: ShipmentUpdate) ->
     return shipment
 
 
-def add_shipment_event(db: Session, shipment: Shipment, payload: ShipmentEventCreate) -> ShipmentEvent:
-    event = ShipmentEvent(shipment_id=shipment.id, **payload.model_dump())
-    db.add(event)
-    db.commit(); db.refresh(event)
+def add_shipment_event(db: Session, shipment: Shipment, payload: ShipmentEventCreate, user: User) -> ShipmentEvent:
+    # Idempotency check: see if identical event already exists
+    existing = db.scalars(
+        select(ShipmentEvent).where(
+            ShipmentEvent.shipment_id == shipment.id,
+            ShipmentEvent.event_type == payload.event_type,
+            ShipmentEvent.occurred_at == payload.occurred_at
+        )
+    ).first()
+    
+    if existing:
+        event = existing
+    else:
+        event = ShipmentEvent(shipment_id=shipment.id, **payload.model_dump())
+        db.add(event)
+        db.commit()
+        db.refresh(event)
+        
+    try:
+        from app.services.fabric_service import fabric_service, FabricClientError
+        fabric_service.record_shipment_event(
+            event_id=f"EVT-{event.id}",
+            shipment_id=f"SHIP-{shipment.id}",
+            event_type=event.event_type.value if hasattr(event.event_type, 'value') else str(event.event_type),
+            location=event.location or "Unknown",
+            timestamp=event.occurred_at.isoformat(),
+            recorded_by=user.email
+        )
+    except FabricClientError as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Blockchain synchronization failed: {str(e)}")
+        
     return event
 
 
-def add_custody_transfer(db: Session, shipment: Shipment, payload: CustodyTransferCreate) -> CustodyTransfer:
+def add_custody_transfer(db: Session, shipment: Shipment, payload: CustodyTransferCreate, user: User) -> CustodyTransfer:
     if payload.from_organization_id == payload.to_organization_id:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="from_organization_id and to_organization_id must differ.")
     if db.get(Organization, payload.from_organization_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="from_organization_id not found.")
     if db.get(Organization, payload.to_organization_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="to_organization_id not found.")
-    transfer = CustodyTransfer(shipment_id=shipment.id, **payload.model_dump())
-    db.add(transfer)
-    db.commit(); db.refresh(transfer)
+        
+    # Idempotency check
+    existing = db.scalars(
+        select(CustodyTransfer).where(
+            CustodyTransfer.shipment_id == shipment.id,
+            CustodyTransfer.from_organization_id == payload.from_organization_id,
+            CustodyTransfer.to_organization_id == payload.to_organization_id,
+            CustodyTransfer.transferred_at == payload.transferred_at
+        )
+    ).first()
+    
+    if existing:
+        transfer = existing
+    else:
+        transfer = CustodyTransfer(shipment_id=shipment.id, **payload.model_dump())
+        db.add(transfer)
+        db.commit()
+        db.refresh(transfer)
+        
+    try:
+        from app.services.fabric_service import fabric_service, FabricClientError
+        fabric_service.record_shipment_event(
+            event_id=f"CUST-{transfer.id}",
+            shipment_id=f"SHIP-{shipment.id}",
+            event_type="CUSTODY_TRANSFER",
+            location="Transfer point",
+            timestamp=transfer.transferred_at.isoformat(),
+            recorded_by=user.email
+        )
+    except FabricClientError as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Blockchain synchronization failed: {str(e)}")
+        
     return transfer

@@ -25,4 +25,4 @@ def create_custody_transfer_endpoint(shipment_id: int, payload: CustodyTransferC
     shipment = get_shipment_for_user(db, current_user, shipment_id)
     if current_user.role not in {UserRole.ADMIN, UserRole.LOGISTICS, UserRole.WAREHOUSE}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions.")
-    return add_custody_transfer(db, shipment, payload)
+    return add_custody_transfer(db, shipment, payload, current_user)
