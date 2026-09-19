@@ -1,0 +1,25 @@
+{
+  "name": "traceability-chaincode",
+  "version": "1.0.0",
+  "description": "Cold Trace Traceability Chaincode",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "fabric-chaincode-node server"
+  },
+  "engineStrict": true,
+  "author": "Cold Trace",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "fabric-contract-api": "^2.5.3",
+    "fabric-shim": "^2.5.3"
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.11",
+    "typescript": "^5.0.4"
+  }
+}
