@@ -186,6 +186,7 @@ export const api = {
   
   // Products
   getProducts: (token: string) => apiRequest<Product[]>("/api/v1/products", { token }),
+  getProduct: (token: string, id: number) => apiRequest<Product>(`/api/v1/products/${id}`, { token }),
   createProduct: (token: string, payload: ProductCreate) =>
     apiRequest<Product>("/api/v1/products", {
       token,
@@ -195,6 +196,7 @@ export const api = {
 
   // Batches
   getBatches: (token: string) => apiRequest<Batch[]>("/api/v1/batches", { token }),
+  getBatch: (token: string, id: number) => apiRequest<Batch>(`/api/v1/batches/${id}`, { token }),
   createBatch: (token: string, payload: BatchCreate) =>
     apiRequest<Batch>("/api/v1/batches", {
       token,

@@ -56,6 +56,8 @@ def update_shipment_endpoint(shipment_id: int, payload: ShipmentUpdate, db: Sess
 
 @router.post("/shipments/{shipment_id}/events", response_model=ShipmentEventRead, status_code=status.HTTP_201_CREATED)
 def create_shipment_event_endpoint(shipment_id: int, payload: ShipmentEventCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> ShipmentEvent:
+    if current_user.role not in {UserRole.ADMIN, UserRole.MANUFACTURER, UserRole.LOGISTICS, UserRole.WAREHOUSE, UserRole.HOSPITAL}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions.")
     shipment = get_shipment_for_user(db, current_user, shipment_id)
     return add_shipment_event(db, shipment, payload, current_user)
 

@@ -28,7 +28,10 @@ def _build_session() -> Session:
     return Session(bind=engine)
 
 
-def test_product_batch_shipment_flow_and_validation() -> None:
+from unittest.mock import patch
+
+@patch("app.services.fabric_service.fabric_service.record_shipment_event")
+def test_product_batch_shipment_flow_and_validation(mock_fabric) -> None:
     session = _build_session()
     app.dependency_overrides[get_db] = lambda: session
 
