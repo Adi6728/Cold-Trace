@@ -26,11 +26,12 @@ def get_sensors(
     skip: int = 0,
     limit: int = 100,
     organization_id: int | None = None,
+    shipment_id: int | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> list[SensorResponse]:
     """Retrieve sensors."""
-    return SensorService.list_sensors_for_user(db=db, user=current_user, organization_id=organization_id, skip=skip, limit=limit)
+    return SensorService.list_sensors_for_user(db=db, user=current_user, organization_id=organization_id, shipment_id=shipment_id, skip=skip, limit=limit)
 
 
 @router.get("/{sensor_id}", response_model=SensorResponse)

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { api, Shipment, ShipmentEvent, CustodyTransfer, AuthUserResponse, Alert, Batch, Product, Sensor, SensorReading } from "@/lib/api";
 import { canPerformAction } from "@/lib/rbac";
 import Badge from "@/app/components/Badge";
+import TelemetryChart from "@/app/components/TelemetryChart";
 
 // Reusing CSS modules
 import tableStyles from "@/app/components/Table.module.css";
@@ -78,14 +79,10 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
         setCustodyTransfers(custodyData);
         setAlerts(alertsData);
 
-        // Load sensors (Missing API capability: Cannot query sensors by shipment_id directly)
-        // Workaround: fetch sensors (up to limit) and find the one for this shipment.
+        // Load sensors using new shipmentId filter capability
         try {
-          // LIMITATION: GET /sensors currently has no shipment_id filter.
-          // We fetch all sensors and filter on the client side.
-          // This will be addressed during Step 9.3B telemetry work.
-          const allSensors = await api.getSensors(token!);
-          const matchedSensor = allSensors.find(s => s.shipment_id === Number(id));
+          const allSensors = await api.getSensors(token!, Number(id));
+          const matchedSensor = allSensors[0];
           if (matchedSensor) {
             setSensor(matchedSensor);
             const readingsData = await api.getSensorReadings(token!, matchedSensor.id);
@@ -322,10 +319,12 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
             </div>
           )}
         </section>
+      </div>
 
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 32, marginTop: 32 }}>
         {/* Telemetry Section */}
         <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
             <h2 style={{ margin: 0, fontSize: 18 }}>Sensor Telemetry</h2>
             {sensor && <Badge status={sensor.status === "ACTIVE" ? "success" : "default"}>{sensor.sensor_code}</Badge>}
           </div>
@@ -335,33 +334,49 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
           ) : readings.length === 0 ? (
              <p style={{ color: "#6b7280" }}>No readings available from this sensor.</p>
           ) : (
-             <div style={{ maxHeight: 300, overflowY: "auto" }}>
-               <table className={tableStyles.table}>
-                 <thead>
-                   <tr>
-                     <th>Time</th>
-                     <th>Temp (°C)</th>
-                     <th>Humidity (%)</th>
-                   </tr>
-                 </thead>
-                 <tbody>
-                   {readings.slice().sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()).map(r => (
-                     <tr key={r.id}>
-                       <td>{new Date(r.recorded_at).toLocaleString()}</td>
-                       <td>
-                         <span style={{ 
-                           fontWeight: 500,
-                           color: product && (r.temperature < product.storage_min_temp || r.temperature > product.storage_max_temp) ? "#dc2626" : "inherit"
-                         }}>
-                           {r.temperature.toFixed(1)}
-                         </span>
-                       </td>
-                       <td>{r.humidity != null ? r.humidity.toFixed(1) : "-"}</td>
-                     </tr>
-                   ))}
-                 </tbody>
-               </table>
-             </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+              {/* Telemetry Summary Cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+                {(() => {
+                  const latest = [...readings].sort((a,b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime())[0];
+                  const isNormal = product ? (latest.temperature >= product.storage_min_temp && latest.temperature <= product.storage_max_temp) : true;
+                  return (
+                    <>
+                      <div style={{ padding: 16, border: "1px solid #e2e8f0", borderRadius: 8 }}>
+                        <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase" }}>Status</div>
+                        <div style={{ fontSize: 18, fontWeight: 600, color: isNormal ? "#16a34a" : "#ef4444", marginTop: 4 }}>
+                           {isNormal ? "NORMAL" : "OUT OF RANGE"}
+                        </div>
+                      </div>
+                      <div style={{ padding: 16, border: "1px solid #e2e8f0", borderRadius: 8 }}>
+                        <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase" }}>Latest Temperature</div>
+                        <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: isNormal ? "#0f172a" : "#ef4444" }}>
+                           {latest.temperature.toFixed(1)}°C
+                        </div>
+                      </div>
+                      <div style={{ padding: 16, border: "1px solid #e2e8f0", borderRadius: 8 }}>
+                        <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase" }}>Latest Humidity</div>
+                        <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>
+                           {latest.humidity != null ? `${latest.humidity.toFixed(1)}%` : "-"}
+                        </div>
+                      </div>
+                      <div style={{ padding: 16, border: "1px solid #e2e8f0", borderRadius: 8 }}>
+                        <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase" }}>Last Updated</div>
+                        <div style={{ fontSize: 14, fontWeight: 500, marginTop: 8 }}>
+                           {new Date(latest.recorded_at).toLocaleString()}
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Chart */}
+              <div>
+                <h3 style={{ fontSize: 16, marginBottom: 16, marginTop: 0 }}>Temperature History</h3>
+                <TelemetryChart readings={readings} product={product} />
+              </div>
+            </div>
           )}
         </section>
       </div>

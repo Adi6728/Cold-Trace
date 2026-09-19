@@ -231,7 +231,10 @@ export const api = {
     }),
 
   // Sensors
-  getSensors: (token: string) => apiRequest<Sensor[]>("/api/v1/sensors/", { token }),
+  getSensors: (token: string, shipmentId?: number) => {
+    const url = shipmentId ? `/api/v1/sensors/?shipment_id=${shipmentId}` : "/api/v1/sensors/";
+    return apiRequest<Sensor[]>(url, { token });
+  },
   getSensor: (token: string, id: number) => apiRequest<Sensor>(`/api/v1/sensors/${id}`, { token }),
   getSensorReadings: (token: string, id: number) => apiRequest<SensorReading[]>(`/api/v1/sensors/${id}/readings`, { token }),
 

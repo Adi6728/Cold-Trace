@@ -32,7 +32,7 @@ class SensorService:
         return sensor
 
     @staticmethod
-    def list_sensors_for_user(db: Session, user: User, organization_id: Optional[int] = None, skip: int = 0, limit: int = 100) -> list[Sensor]:
+    def list_sensors_for_user(db: Session, user: User, organization_id: Optional[int] = None, shipment_id: Optional[int] = None, skip: int = 0, limit: int = 100) -> list[Sensor]:
         from app.core.permissions import UserRole
         if user.role not in {UserRole.ADMIN, UserRole.MANUFACTURER, UserRole.LOGISTICS, UserRole.WAREHOUSE, UserRole.HOSPITAL, UserRole.AUDITOR}:
             raise HTTPException(status_code=403, detail="Insufficient permissions.")
@@ -41,14 +41,20 @@ class SensorService:
         if user.organization_id is not None and org_id != user.organization_id:
             raise HTTPException(status_code=403, detail="Insufficient permissions for this organization.")
             
-        if org_id is None:
+        query = db.query(Sensor)
+        
+        if org_id is not None:
+            query = query.join(Shipment).filter(
+                (Shipment.origin_organization_id == org_id) | (Shipment.destination_organization_id == org_id)
+            )
+        else:
             if user.role not in {UserRole.ADMIN, UserRole.AUDITOR}:
                 raise HTTPException(status_code=403, detail="An organization assignment is required.")
-            return db.query(Sensor).offset(skip).limit(limit).all()
+        
+        if shipment_id is not None:
+            query = query.filter(Sensor.shipment_id == shipment_id)
             
-        return db.query(Sensor).join(Shipment).filter(
-            (Shipment.origin_organization_id == org_id) | (Shipment.destination_organization_id == org_id)
-        ).offset(skip).limit(limit).all()
+        return query.offset(skip).limit(limit).all()
 
     @staticmethod
     def get_sensor_for_user(db: Session, user: User, sensor_id: int) -> Sensor:

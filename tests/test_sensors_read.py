@@ -87,6 +87,15 @@ def test_sensor_read_apis():
     assert len(res_a.json()) == 1
     assert res_a.json()[0]["sensor_code"] == "SENS-READ-01"
 
+    # 1.5. Read sensors filtered by shipment_id
+    res_shipment_filtered = client.get(f"/api/v1/sensors?shipment_id={shipment.id}", headers=headers_a)
+    assert res_shipment_filtered.status_code == 200
+    assert len(res_shipment_filtered.json()) == 1
+
+    res_shipment_empty = client.get("/api/v1/sensors?shipment_id=9999", headers=headers_a)
+    assert res_shipment_empty.status_code == 200
+    assert len(res_shipment_empty.json()) == 0
+
     # User B should see 0 sensors (since they are in Org B and shipment is for Org A)
     res_b = client.get("/api/v1/sensors", headers=headers_b)
     assert res_b.status_code == 200
