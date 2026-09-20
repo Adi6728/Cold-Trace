@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { api, Shipment, ShipmentEvent, Alert } from "@/lib/api";
 import DashboardCard from "../../components/DashboardCard";
+import Badge from "../../components/Badge";
 import styles from "../../components/Dashboard.module.css";
 
 interface DashboardData {
@@ -39,7 +41,7 @@ export default function DashboardPage() {
         const activeShipments = shipments.filter((s: Shipment) => s.status !== "DELIVERED");
         const activeSensors = sensors.filter((s: any) => s.status === 'ACTIVE');
 
-        // Fetch events and alerts from ALL active shipments to calculate global KPIs (Client-side aggregation)
+        // Fetch events and alerts from ALL active shipments to calculate global KPIs
         let allEvents: (ShipmentEvent & { shipmentId: number })[] = [];
         let allAlerts: (Alert & { shipmentId: number })[] = [];
 
@@ -93,9 +95,14 @@ export default function DashboardPage() {
     );
   }
 
+  const hasAlerts = (data?.openAlerts ?? 0) > 0;
+
   return (
     <div className={styles.dashboardContainer}>
-      <h1 className={styles.pageTitle}>Dashboard Overview</h1>
+      <div className={styles.header}>
+        <h1 className={styles.pageTitle}>Dashboard Overview</h1>
+        <p className={styles.pageSubtitle}>Monitor global shipment operations, active sensors, and critical alerts.</p>
+      </div>
 
       <div className={styles.statsGrid}>
         <DashboardCard 
@@ -121,7 +128,8 @@ export default function DashboardPage() {
           title="Open Alerts" 
           value={data?.openAlerts ?? 0} 
           icon="⚠️"
-          trend="Action Required"
+          trend={hasAlerts ? "Action Required" : "All Clear"}
+          type={hasAlerts ? "error" : "default"}
           loading={loading}
         />
         <DashboardCard 
@@ -130,10 +138,6 @@ export default function DashboardPage() {
           icon="🌡️" 
           loading={loading}
         />
-      </div>
-
-      <div style={{ marginBottom: 16, fontSize: 12, color: "#64748b" }}>
-        * Note: Open Alerts and Recent Activity are aggregated client-side across all active shipments due to missing global backend APIs.
       </div>
 
       <div className={styles.activitySection}>
@@ -150,16 +154,25 @@ export default function DashboardPage() {
           ) : (
             <div className={styles.feedList}>
               {data?.recentEvents.map(event => (
-                <div key={event.id} className={styles.feedItem}>
-                  <div className={styles.feedHeader}>
-                    <span className={styles.feedType}>{event.event_type}</span>
-                    <span className={styles.feedTime}>{new Date(event.occurred_at).toLocaleString()}</span>
+                <Link key={event.id} href={`/shipments/${event.shipmentId}`} className={styles.linkItem}>
+                  <div className={styles.feedItem}>
+                    <div className={styles.feedHeader}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <span className={styles.feedType}>{event.event_type}</span>
+                      </div>
+                      <span className={styles.feedTime}>
+                        {new Date(event.occurred_at).toLocaleDateString()} <br/>
+                        {new Date(event.occurred_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </span>
+                    </div>
+                    <div className={styles.feedDesc}>
+                      <span style={{ fontWeight: 500, color: "#334155" }}>Shipment #{event.shipmentId}</span>
+                      <br/>
+                      <span style={{ color: "#94a3b8" }}>📍</span> {event.location || 'Location unspecified'}
+                      {event.description && <div style={{ marginTop: 4, padding: 8, background: "rgba(255,255,255,0.6)", borderRadius: 6 }}>{event.description}</div>}
+                    </div>
                   </div>
-                  <div className={styles.feedDesc}>
-                    Shipment #{event.shipmentId} • {event.location || 'No location'}
-                    {event.description && ` - ${event.description}`}
-                  </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -177,21 +190,39 @@ export default function DashboardPage() {
             <div className={styles.emptyState}>No recent alerts found.</div>
           ) : (
             <div className={styles.feedList}>
-              {data?.recentAlerts.map(alert => (
-                <div key={alert.id} className={styles.feedItem}>
-                  <div className={styles.feedHeader}>
-                    <span className={styles.feedType} style={{ color: alert.severity === 'CRITICAL' ? '#ef4444' : '#f59e0b' }}>
-                      {alert.severity} ALERT
-                    </span>
-                    <span className={styles.feedTime}>{new Date(alert.detected_at).toLocaleString()}</span>
+              {data?.recentAlerts.map(alert => {
+                const isCritical = alert.severity === 'CRITICAL';
+                const isHigh = alert.severity === 'HIGH';
+                const feedClass = `${styles.feedItem} ${isCritical ? styles.feedItemAlertCritical : isHigh ? styles.feedItemAlertHigh : styles.feedItemAlert}`;
+                
+                return (
+                <Link key={alert.id} href={`/shipments/${alert.shipmentId}`} className={styles.linkItem}>
+                  <div className={feedClass}>
+                    <div className={styles.feedHeader}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <span className={styles.feedType} style={{ color: isCritical ? '#991b1b' : isHigh ? '#9a3412' : '#854d0e' }}>
+                          {alert.severity} Alert
+                        </span>
+                        <Badge status={alert.status === 'OPEN' ? 'error' : alert.status === 'ACKNOWLEDGED' ? 'warning' : 'default'}>{alert.status}</Badge>
+                      </div>
+                      <span className={styles.feedTime}>
+                        {new Date(alert.detected_at).toLocaleDateString()} <br/>
+                        {new Date(alert.detected_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </span>
+                    </div>
+                    <div className={styles.feedDesc}>
+                      <div style={{ display: "flex", gap: 16, marginBottom: 8, fontWeight: 500, color: "#334155" }}>
+                        <span>Shipment #{alert.shipmentId}</span>
+                        <span>Sensor {alert.sensor_id}</span>
+                      </div>
+                      <div style={{ background: "rgba(255,255,255,0.5)", padding: 8, borderRadius: 6 }}>
+                        <span style={{ color: "#64748b" }}>Latest Temp:</span> <strong>{alert.latest_temperature}°C</strong>
+                        {alert.message && <div style={{ marginTop: 4 }}>{alert.message}</div>}
+                      </div>
+                    </div>
                   </div>
-                  <div className={styles.feedDesc}>
-                    Shipment #{alert.shipmentId} • Sensor #{alert.sensor_id}
-                    <br />
-                    {alert.message} ({alert.latest_temperature}°C)
-                  </div>
-                </div>
-              ))}
+                </Link>
+              )})}
             </div>
           )}
         </div>

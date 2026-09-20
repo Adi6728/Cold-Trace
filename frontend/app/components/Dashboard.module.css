@@ -1,18 +1,31 @@
 .dashboardContainer {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 24px 32px;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.header {
+  margin-bottom: 32px;
 }
 
 .pageTitle {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   color: #0f172a;
-  margin-bottom: 24px;
+  margin: 0 0 8px 0;
+}
+
+.pageSubtitle {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0;
 }
 
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 24px;
   margin-bottom: 32px;
 }
@@ -22,14 +35,10 @@
   background: #ffffff;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  border: 1px solid #f1f5f9;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.025);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
 }
 
 .cardHeader {
@@ -40,22 +49,37 @@
 }
 
 .cardTitle {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
 }
 
 .cardIcon {
   font-size: 20px;
-  background: #f1f5f9;
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.cardIconDefault {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.cardIconWarning {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.cardIconError {
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 .cardBody {
@@ -70,30 +94,33 @@
 
 .cardFooter {
   font-size: 13px;
-  color: #10b981;
+  color: #64748b;
   font-weight: 500;
 }
 
 /* Activity Sections */
 .activitySection {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 24px;
+  align-items: flex-start;
 }
 
 .feedContainer {
+  flex: 1 1 45%;
+  min-width: 320px;
   background: #ffffff;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #e2e8f0;
 }
 
 .feedTitle {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #0f172a;
-  margin-bottom: 16px;
+  margin: 0 0 20px 0;
   padding-bottom: 12px;
   border-bottom: 1px solid #f1f5f9;
 }
@@ -107,42 +134,54 @@
 .feedItem {
   display: flex;
   flex-direction: column;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f8fafc;
-}
-
-.feedItem:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
 }
 
 .feedHeader {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+  align-items: flex-start;
 }
 
 .feedType {
   font-weight: 600;
-  color: #334155;
+  color: #0f172a;
   font-size: 14px;
 }
 
 .feedTime {
   font-size: 12px;
-  color: #94a3b8;
+  color: #64748b;
+  text-align: right;
 }
 
 .feedDesc {
   font-size: 13px;
-  color: #64748b;
-  line-height: 1.4;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.feedItemAlert {
+  background: #fefce8;
+  border-color: #fef08a;
+}
+.feedItemAlertCritical {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+.feedItemAlertHigh {
+  background: #fff7ed;
+  border-color: #fed7aa;
 }
 
 .emptyState {
   padding: 32px 0;
   text-align: center;
-  color: #94a3b8;
+  color: #64748b;
   font-size: 14px;
   font-style: italic;
 }
@@ -158,13 +197,13 @@
 }
 
 .skeletonFeed {
-  height: 60px;
+  height: 80px;
   width: 100%;
   background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
   background-size: 200% 100%;
   animation: loading 1.5s infinite;
-  border-radius: 6px;
-  margin-bottom: 12px;
+  border-radius: 12px;
+  margin-bottom: 16px;
 }
 
 @keyframes loading {
@@ -172,8 +211,13 @@
   100% { background-position: -200% 0; }
 }
 
-@media (max-width: 1024px) {
-  .activitySection {
-    grid-template-columns: 1fr;
-  }
+.linkItem {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.linkItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
 }

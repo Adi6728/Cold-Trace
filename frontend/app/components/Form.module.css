@@ -2,15 +2,16 @@
   background: #ffffff;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 32px;
 }
 
 .formTitle {
   margin: 0 0 24px 0;
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 600;
-  color: #1e293b;
+  color: #0f172a;
 }
 
 .form {
@@ -22,6 +23,12 @@
 .formRow {
   display: flex;
   gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .formRow {
+    flex-direction: column;
+  }
 }
 
 .formGroup {
@@ -62,7 +69,7 @@
   padding: 10px 16px;
   border-radius: 8px;
   border: none;
-  background: #2563eb;
+  background: #0f172a;
   color: #ffffff;
   font-size: 0.875rem;
   font-weight: 600;
@@ -72,7 +79,7 @@
 }
 
 .button:hover {
-  background: #1d4ed8;
+  background: #334155;
 }
 
 .button:active {
@@ -80,7 +87,7 @@
 }
 
 .errorText {
-  color: #ef4444;
+  color: #dc2626;
   font-size: 0.875rem;
   background: #fef2f2;
   padding: 12px;

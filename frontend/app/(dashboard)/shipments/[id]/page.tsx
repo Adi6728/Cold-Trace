@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api, Shipment, ShipmentEvent, CustodyTransfer, AuthUserResponse, Alert, Batch, Product, Sensor, SensorReading } from "@/lib/api";
+import { api, Shipment, ShipmentEvent, CustodyTransfer, AuthUserResponse, Alert, Batch, Product, Sensor, SensorReading, BlockchainRecord } from "@/lib/api";
 import { canPerformAction } from "@/lib/rbac";
 import Badge from "@/app/components/Badge";
 import TelemetryChart from "@/app/components/TelemetryChart";
@@ -22,6 +22,8 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
   const [events, setEvents] = useState<ShipmentEvent[]>([]);
   const [custodyTransfers, setCustodyTransfers] = useState<CustodyTransfer[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [blockchainHistory, setBlockchainHistory] = useState<BlockchainRecord[] | null>(null);
+  const [blockchainError, setBlockchainError] = useState<string | null>(null);
   
   // Sensor state
   const [sensor, setSensor] = useState<Sensor | null>(null);
@@ -68,16 +70,21 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
           console.warn("Failed to load batch or product", e);
         }
 
-        // Parallel load of events, custody, alerts
-        const [eventsData, custodyData, alertsData] = await Promise.all([
+        // Parallel load of events, custody, alerts, blockchain
+        const [eventsData, custodyData, alertsData, bcData] = await Promise.all([
           api.getShipmentEvents(token!, Number(id)).catch(() => [] as ShipmentEvent[]),
           api.getCustodyTransfers(token!, Number(id)).catch(() => [] as CustodyTransfer[]),
-          api.getShipmentAlerts(token!, Number(id)).catch(() => [] as Alert[])
+          api.getShipmentAlerts(token!, Number(id)).catch(() => [] as Alert[]),
+          api.getShipmentBlockchainHistory(token!, Number(id)).catch(err => {
+            setBlockchainError(err.message || "Fabric unavailable");
+            return null;
+          })
         ]);
 
         setEvents(eventsData);
         setCustodyTransfers(custodyData);
         setAlerts(alertsData);
+        setBlockchainHistory(bcData);
 
         // Load sensors using new shipmentId filter capability
         try {
@@ -189,275 +196,387 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
   const showControls = canCreateEvent || canCreateCustody;
 
   return (
-    <main style={{ maxWidth: 1200, margin: "0 auto", padding: 32, display: "flex", flexDirection: "column", gap: 32 }}>
+    <main style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 32px", display: "flex", flexDirection: "column", gap: 24, background: "#f8fafc", minHeight: "100vh" }}>
       
       {/* Header Section */}
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <header style={{ 
+        display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16,
+        background: "#fff", padding: 24, borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
+      }}>
         <div>
-          <h1 style={{ margin: 0, display: "flex", alignItems: "center", gap: 16 }}>
-            Shipment #{shipment.id}
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
+            Shipment Record
+          </div>
+          <h1 style={{ margin: 0, display: "flex", alignItems: "center", gap: 12, fontSize: 28, color: "#0f172a" }}>
+            #{shipment.id}
             <Badge status={shipment.status === "DELIVERED" ? "success" : shipment.status === "IN_TRANSIT" ? "warning" : "default"}>
               {shipment.status}
             </Badge>
           </h1>
-          <p style={{ color: "#4b5563", margin: "8px 0 0 0" }}>
-            Route: Org {shipment.origin_organization_id} &rarr; Org {shipment.destination_organization_id}
+          <p style={{ color: "#475569", margin: "8px 0 0 0", fontSize: 15, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontWeight: 500 }}>Org {shipment.origin_organization_id}</span>
+            <span style={{ color: "#94a3b8" }}>&rarr;</span>
+            <span style={{ fontWeight: 500 }}>Org {shipment.destination_organization_id}</span>
           </p>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 14, color: "#4b5563" }}>Started: {shipment.started_at ? new Date(shipment.started_at).toLocaleDateString() : "Pending"}</div>
-          <div style={{ fontSize: 14, color: "#4b5563" }}>Expected: {shipment.expected_delivery_at ? new Date(shipment.expected_delivery_at).toLocaleDateString() : "N/A"}</div>
+        <div style={{ textAlign: "right", display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ fontSize: 13, color: "#64748b" }}>
+            <span style={{ fontWeight: 500, color: "#334155" }}>Started:</span> {shipment.started_at ? new Date(shipment.started_at).toLocaleString(undefined, {dateStyle: 'medium', timeStyle: 'short'}) : "Pending"}
+          </div>
+          <div style={{ fontSize: 13, color: "#64748b" }}>
+            <span style={{ fontWeight: 500, color: "#334155" }}>Expected:</span> {shipment.expected_delivery_at ? new Date(shipment.expected_delivery_at).toLocaleString(undefined, {dateStyle: 'medium', timeStyle: 'short'}) : "N/A"}
+          </div>
         </div>
       </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
-        {/* Product / Batch Summary */}
-        <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)" }}>
-          <h2 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Batch & Product Info</h2>
-          {!batch || !product ? (
-             <p style={{ color: "#6b7280" }}>No batch/product information available.</p>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <div>
-                <div style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase" }}>Product Name</div>
-                <div style={{ fontWeight: 500 }}>{product.name}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase" }}>Batch Number</div>
-                <div style={{ fontWeight: 500 }}>{batch.batch_number}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase" }}>Quantity</div>
-                <div style={{ fontWeight: 500 }}>{batch.quantity} units</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase" }}>Storage Temp</div>
-                <div style={{ fontWeight: 500 }}>{product.storage_min_temp}°C to {product.storage_max_temp}°C</div>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* Action Controls (Role Aware) */}
-        {showControls ? (
-          <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)", display: "flex", gap: 24 }}>
-            {canCreateEvent && (
-              <div style={{ flex: 1 }}>
-                <h3 style={{ marginTop: 0, fontSize: 16 }}>Add Event</h3>
-                <form onSubmit={handleCreateEvent} className={formStyles.form} style={{ gap: 8 }}>
-                  {eventError && <div className={formStyles.error}>{eventError}</div>}
-                  <select value={eventType} onChange={e => setEventType(e.target.value)} className={formStyles.input}>
-                    <option value="CREATED">Created</option>
-                    <option value="DISPATCHED">Dispatched</option>
-                    <option value="IN_TRANSIT">In Transit</option>
-                    <option value="RECEIVED">Received</option>
-                    <option value="DELAYED">Delayed</option>
-                    <option value="HAZARD">Hazard</option>
-                  </select>
-                  <input placeholder="Location" value={eventLocation} onChange={e => setEventLocation(e.target.value)} className={formStyles.input} />
-                  <input placeholder="Description" value={eventDesc} onChange={e => setEventDesc(e.target.value)} className={formStyles.input} />
-                  <button type="submit" className={formStyles.button}>Submit Event</button>
-                </form>
-              </div>
-            )}
-            
-            {canCreateCustody && (
-              <div style={{ flex: 1 }}>
-                <h3 style={{ marginTop: 0, fontSize: 16 }}>Transfer Custody</h3>
-                <form onSubmit={handleCreateCustody} className={formStyles.form} style={{ gap: 8 }}>
-                  {custodyError && <div className={formStyles.error}>{custodyError}</div>}
-                  <input required type="number" min="1" placeholder="To Org ID" value={toOrgId} onChange={e => setToOrgId(e.target.value === "" ? "" : Number(e.target.value))} className={formStyles.input} />
-                  <input placeholder="Notes" value={custodyNotes} onChange={e => setCustodyNotes(e.target.value)} className={formStyles.input} />
-                  <button type="submit" className={formStyles.button} style={{ background: "#10b981" }}>Transfer</button>
-                </form>
-              </div>
-            )}
-          </section>
-        ) : (
-          <section style={{ background: "#f9fafb", borderRadius: 12, padding: 24, display: "flex", alignItems: "center", justifyContent: "center", border: "1px dashed #d1d5db" }}>
-            <p style={{ color: "#6b7280" }}>You have read-only access to this shipment.</p>
-          </section>
-        )}
-      </div>
-
-      {/* Shipment Journey Timeline */}
-      <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)", marginTop: 32 }}>
-        <h2 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Shipment Journey</h2>
-        {events.length === 0 && custodyTransfers.length === 0 ? <p style={{ color: "#6b7280" }}>No journey activity recorded yet.</p> : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 0, position: "relative" }}>
-            {/* Vertical Line */}
-            <div style={{ position: "absolute", left: 15, top: 20, bottom: 20, width: 2, background: "#e2e8f0" }} />
-            
-            {[
-              ...events.map(ev => ({ type: 'EVENT' as const, date: new Date(ev.occurred_at), data: ev })),
-              ...custodyTransfers.map(ct => ({ type: 'CUSTODY' as const, date: new Date(ct.transferred_at), data: ct }))
-            ]
-            .sort((a, b) => b.date.getTime() - a.date.getTime())
-            .map((item, idx) => (
-              <div key={`${item.type}-${item.data.id}`} style={{ display: "flex", gap: 16, position: "relative", paddingBottom: 32 }}>
-                {/* Node marker */}
-                <div style={{ 
-                  width: 32, height: 32, borderRadius: 16, flexShrink: 0, zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-                  background: item.type === 'CUSTODY' ? "#8b5cf6" : "#3b82f6", color: "white", fontSize: 12, fontWeight: "bold",
-                  border: "4px solid #fff", boxShadow: "0 0 0 1px #e2e8f0"
-                }}>
-                  {item.type === 'CUSTODY' ? 'CT' : 'EV'}
-                </div>
-                
-                {/* Content Card */}
-                <div style={{ 
-                  flex: 1, padding: 16, borderRadius: 8,
-                  background: item.type === 'CUSTODY' ? "#f5f3ff" : "#f0fdfa",
-                  border: `1px solid ${item.type === 'CUSTODY' ? '#ddd6fe' : '#ccfbf1'}`
-                }}>
-                  {item.type === 'EVENT' ? (
-                    <>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                        <div style={{ fontWeight: 600, color: "#0f172a" }}>Event: {(item.data as ShipmentEvent).event_type}</div>
-                        <div style={{ fontSize: 12, color: "#64748b" }}>{item.date.toLocaleString()}</div>
-                      </div>
-                      {(item.data as ShipmentEvent).location && <div style={{ fontSize: 14, color: "#334155", marginTop: 4 }}>📍 {(item.data as ShipmentEvent).location}</div>}
-                      {(item.data as ShipmentEvent).description && <div style={{ fontSize: 14, color: "#475569", marginTop: 4 }}>{(item.data as ShipmentEvent).description}</div>}
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                        <div style={{ fontWeight: 600, color: "#4c1d95" }}>Custody Transfer</div>
-                        <div style={{ fontSize: 12, color: "#64748b" }}>{item.date.toLocaleString()}</div>
-                      </div>
-                      <div style={{ fontSize: 14, color: "#5b21b6", marginTop: 4, display: "flex", alignItems: "center", gap: 8 }}>
-                        <span>Org {(item.data as CustodyTransfer).from_organization_id}</span>
-                        <span>&rarr;</span>
-                        <span>Org {(item.data as CustodyTransfer).to_organization_id}</span>
-                      </div>
-                      {(item.data as CustodyTransfer).notes && <div style={{ fontSize: 14, color: "#475569", marginTop: 8 }}>{(item.data as CustodyTransfer).notes}</div>}
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
-        {/* Alerts Section */}
-        <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)" }}>
-          <h2 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Alerts</h2>
-          {alerts.length === 0 ? <p style={{ color: "#6b7280" }}>No active alerts.</p> : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {alerts.slice().sort((a, b) => new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime()).map(al => {
-                const isResolved = al.status === "RESOLVED";
-                const isAcknowledged = al.status === "ACKNOWLEDGED";
-                const isOpen = al.status === "OPEN";
-
-                return (
-                <div key={al.id} style={{ 
-                  background: isResolved ? '#f8fafc' : al.severity === 'CRITICAL' ? '#fee2e2' : al.severity === 'HIGH' ? '#ffedd5' : '#fef3c7',
-                  padding: 16, borderRadius: 8, border: "1px solid rgba(0,0,0,0.05)" 
-                }}>
-                  <div style={{ fontWeight: 600, color: isResolved ? '#475569' : al.severity === 'CRITICAL' ? '#991b1b' : al.severity === 'HIGH' ? '#9a3412' : '#92400e', display: 'flex', justifyContent: 'space-between', alignItems: "center" }}>
-                    <span>{al.severity} Alert</span>
-                    <Badge status={isOpen ? 'error' : isAcknowledged ? 'warning' : 'success'}>{al.status}</Badge>
-                  </div>
-                  <div style={{ fontSize: 14, marginTop: 8 }}>Sensor: {al.sensor_id} | Latest Temp: {al.latest_temperature}°C</div>
-                  {product && (
-                    <div style={{ fontSize: 12, marginTop: 2, color: "#64748b" }}>
-                      Allowed Range: {product.storage_min_temp}°C to {product.storage_max_temp}°C
-                    </div>
-                  )}
-                  {al.message && <div style={{ fontSize: 14, marginTop: 8 }}>{al.message}</div>}
-                  <div style={{ fontSize: 12, marginTop: 12, color: "#4b5563" }}>
-                    <div>Detected: {new Date(al.detected_at).toLocaleString()}</div>
-                    {al.acknowledged_at && <div>Acknowledged: {new Date(al.acknowledged_at).toLocaleString()}</div>}
-                    {al.resolved_at && <div>Resolved: {new Date(al.resolved_at).toLocaleString()}</div>}
-                  </div>
-                  
-                  {canManageAlerts && !isResolved && (
-                    <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
-                      {isOpen && (
-                        <button 
-                          onClick={() => handleAcknowledgeAlert(al.id)}
-                          style={{ padding: "6px 12px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 4, cursor: "pointer", fontSize: 12 }}
-                        >
-                          Acknowledge
-                        </button>
-                      )}
-                      <button 
-                        onClick={() => handleResolveAlert(al.id)}
-                        style={{ padding: "6px 12px", background: "#10b981", color: "white", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 12 }}
-                      >
-                        Resolve
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )})}
-            </div>
-          )}
-        </section>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 32, marginTop: 32 }}>
-        {/* Telemetry Section */}
-        <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-            <h2 style={{ margin: 0, fontSize: 18 }}>Sensor Telemetry</h2>
-            {sensor && <Badge status={sensor.status === "ACTIVE" ? "success" : "default"}>{sensor.sensor_code}</Badge>}
-          </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
+        
+        {/* LEFT COLUMN: Data & Telemetry */}
+        <div style={{ flex: "1 1 60%", display: "flex", flexDirection: "column", gap: 24 }}>
           
-          {!sensor ? (
-             <p style={{ color: "#6b7280" }}>No sensor linked to this shipment.</p>
-          ) : readings.length === 0 ? (
-             <p style={{ color: "#6b7280" }}>No readings available from this sensor.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-              {/* Telemetry Summary Cards */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-                {(() => {
-                  const latest = [...readings].sort((a,b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime())[0];
-                  const isNormal = product ? (latest.temperature >= product.storage_min_temp && latest.temperature <= product.storage_max_temp) : true;
-                  return (
-                    <>
-                      <div style={{ padding: 16, border: "1px solid #e2e8f0", borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase" }}>Status</div>
-                        <div style={{ fontSize: 18, fontWeight: 600, color: isNormal ? "#16a34a" : "#ef4444", marginTop: 4 }}>
-                           {isNormal ? "NORMAL" : "OUT OF RANGE"}
-                        </div>
-                      </div>
-                      <div style={{ padding: 16, border: "1px solid #e2e8f0", borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase" }}>Latest Temperature</div>
-                        <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: isNormal ? "#0f172a" : "#ef4444" }}>
-                           {latest.temperature.toFixed(1)}°C
-                        </div>
-                      </div>
-                      <div style={{ padding: 16, border: "1px solid #e2e8f0", borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase" }}>Latest Humidity</div>
-                        <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>
-                           {latest.humidity != null ? `${latest.humidity.toFixed(1)}%` : "-"}
-                        </div>
-                      </div>
-                      <div style={{ padding: 16, border: "1px solid #e2e8f0", borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase" }}>Last Updated</div>
-                        <div style={{ fontSize: 14, fontWeight: 500, marginTop: 8 }}>
-                           {new Date(latest.recorded_at).toLocaleString()}
-                        </div>
-                      </div>
-                    </>
-                  );
-                })()}
+          {/* Product / Batch Summary */}
+          <section style={{ background: "#fff", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            <h2 style={{ margin: "0 0 20px 0", fontSize: 16, color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Batch & Product Info</h2>
+            {!batch || !product ? (
+               <p style={{ color: "#64748b", fontSize: 14 }}>No batch/product information available.</p>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 20 }}>
+                <div>
+                  <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Product Name</div>
+                  <div style={{ fontWeight: 500, color: "#1e293b", fontSize: 15 }}>{product.name}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Batch Number</div>
+                  <div style={{ fontWeight: 500, color: "#1e293b", fontSize: 15, fontFamily: "monospace" }}>{batch.batch_number}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Quantity</div>
+                  <div style={{ fontWeight: 500, color: "#1e293b", fontSize: 15 }}>{batch.quantity} units</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Storage Temp</div>
+                  <div style={{ fontWeight: 500, color: "#1e293b", fontSize: 15 }}>{product.storage_min_temp}°C to {product.storage_max_temp}°C</div>
+                </div>
               </div>
+            )}
+          </section>
 
-              {/* Chart */}
-              <div>
-                <h3 style={{ fontSize: 16, marginBottom: 16, marginTop: 0 }}>Temperature History</h3>
-                <TelemetryChart readings={readings} product={product} />
-              </div>
+          {/* Telemetry Section */}
+          <section style={{ background: "#fff", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>
+              <h2 style={{ margin: 0, fontSize: 16, color: "#0f172a" }}>Sensor Telemetry</h2>
+              {sensor && <Badge status={sensor.status === "ACTIVE" ? "success" : "default"}>{sensor.sensor_code}</Badge>}
             </div>
-          )}
-        </section>
-      </div>
+            
+            {!sensor ? (
+               <p style={{ color: "#64748b", fontSize: 14 }}>No sensor linked to this shipment.</p>
+            ) : readings.length === 0 ? (
+               <p style={{ color: "#64748b", fontSize: 14 }}>No readings available from this sensor.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+                {/* Telemetry Summary Cards */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
+                  {(() => {
+                    const latest = [...readings].sort((a,b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime())[0];
+                    const isNormal = product ? (latest.temperature >= product.storage_min_temp && latest.temperature <= product.storage_max_temp) : true;
+                    return (
+                      <>
+                        <div style={{ padding: 20, background: isNormal ? "#f0fdf4" : "#fef2f2", border: `1px solid ${isNormal ? '#bbf7d0' : '#fecaca'}`, borderRadius: 12 }}>
+                          <div style={{ fontSize: 12, color: isNormal ? "#166534" : "#991b1b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, color: isNormal ? "#15803d" : "#b91c1c", marginTop: 4 }}>
+                             {isNormal ? "NORMAL" : "OUT OF RANGE"}
+                          </div>
+                        </div>
+                        <div style={{ padding: 20, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+                          <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Latest Temp</div>
+                          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: isNormal ? "#0f172a" : "#b91c1c" }}>
+                             {latest.temperature.toFixed(1)}°C
+                          </div>
+                        </div>
+                        <div style={{ padding: 20, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+                          <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Latest Humidity</div>
+                          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: "#0f172a" }}>
+                             {latest.humidity != null ? `${latest.humidity.toFixed(1)}%` : "-"}
+                          </div>
+                        </div>
+                        <div style={{ padding: 20, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+                          <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Last Updated</div>
+                          <div style={{ fontSize: 14, fontWeight: 500, marginTop: 8, color: "#334155" }}>
+                             {new Date(latest.recorded_at).toLocaleTimeString(undefined, {hour: '2-digit', minute:'2-digit', second:'2-digit'})}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
+                             {new Date(latest.recorded_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
 
+                {/* Chart */}
+                <div>
+                  <h3 style={{ fontSize: 14, color: "#475569", marginBottom: 16, marginTop: 0 }}>Temperature History</h3>
+                  <div style={{ height: 300 }}>
+                    <TelemetryChart readings={readings} product={product} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Alerts Section */}
+          <section style={{ background: "#fff", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            <h2 style={{ margin: "0 0 20px 0", fontSize: 16, color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Active & Past Alerts</h2>
+            {alerts.length === 0 ? <p style={{ color: "#64748b", fontSize: 14 }}>No active alerts.</p> : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {alerts.slice().sort((a, b) => new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime()).map(al => {
+                  const isResolved = al.status === "RESOLVED";
+                  const isAcknowledged = al.status === "ACKNOWLEDGED";
+                  const isOpen = al.status === "OPEN";
+
+                  return (
+                  <div key={al.id} style={{ 
+                    background: isResolved ? '#f8fafc' : al.severity === 'CRITICAL' ? '#fef2f2' : al.severity === 'HIGH' ? '#fff7ed' : '#fefce8',
+                    padding: 16, borderRadius: 12, 
+                    border: `1px solid ${isResolved ? '#e2e8f0' : al.severity === 'CRITICAL' ? '#fecaca' : al.severity === 'HIGH' ? '#fed7aa' : '#fef08a'}`
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: "flex-start", marginBottom: 12 }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 15, color: isResolved ? '#64748b' : al.severity === 'CRITICAL' ? '#991b1b' : al.severity === 'HIGH' ? '#9a3412' : '#854d0e' }}>
+                          {al.severity} Severity Alert
+                        </div>
+                        <div style={{ fontSize: 13, color: isResolved ? "#94a3b8" : "#b91c1c", marginTop: 4 }}>
+                          Detected: {new Date(al.detected_at).toLocaleString()}
+                        </div>
+                      </div>
+                      <Badge status={isOpen ? 'error' : isAcknowledged ? 'warning' : 'default'}>{al.status}</Badge>
+                    </div>
+                    
+                    <div style={{ fontSize: 14, color: "#334155", background: "rgba(255,255,255,0.5)", padding: 12, borderRadius: 8 }}>
+                      <div style={{ display: "flex", gap: 16, marginBottom: 8 }}>
+                        <div><span style={{ color: "#64748b" }}>Sensor:</span> {al.sensor_id}</div>
+                        <div><span style={{ color: "#64748b" }}>Latest Temp:</span> <strong>{al.latest_temperature}°C</strong></div>
+                      </div>
+                      {product && (
+                        <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}>
+                          Allowed Range: {product.storage_min_temp}°C to {product.storage_max_temp}°C
+                        </div>
+                      )}
+                      {al.message && <div style={{ color: "#0f172a" }}>{al.message}</div>}
+                    </div>
+                    
+                    {(al.acknowledged_at || al.resolved_at) && (
+                      <div style={{ fontSize: 12, marginTop: 12, color: "#64748b", display: "flex", gap: 16 }}>
+                        {al.acknowledged_at && <div>Ack: {new Date(al.acknowledged_at).toLocaleString()}</div>}
+                        {al.resolved_at && <div>Res: {new Date(al.resolved_at).toLocaleString()}</div>}
+                      </div>
+                    )}
+                    
+                    {canManageAlerts && !isResolved && (
+                      <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+                        {isOpen && (
+                          <button 
+                            onClick={() => handleAcknowledgeAlert(al.id)}
+                            className={formStyles.button}
+                            style={{ padding: "8px 16px", background: "#fff", border: "1px solid #cbd5e1", color: "#334155", width: "auto" }}
+                          >
+                            Acknowledge
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => handleResolveAlert(al.id)}
+                          className={formStyles.button}
+                          style={{ padding: "8px 16px", background: "#10b981", border: "1px solid #059669", width: "auto" }}
+                        >
+                          Mark Resolved
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )})}
+              </div>
+            )}
+          </section>
+
+          {/* Blockchain Verification Section */}
+          <section style={{ background: "#fff", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>
+              <h2 style={{ margin: 0, fontSize: 16, color: "#0f172a", display: "flex", alignItems: "center", gap: 8 }}>
+                🔗 Blockchain Verification
+              </h2>
+              <Badge status={blockchainHistory ? "success" : blockchainError ? "error" : "default"}>
+                {blockchainHistory ? "VERIFIED" : blockchainError ? "UNAVAILABLE" : "LOADING"}
+              </Badge>
+            </div>
+            <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
+              Immutable records fetched directly from the Hyperledger Fabric ledger to audit operational events. This is independent of operational data.
+            </p>
+
+            {blockchainError ? (
+               <div style={{ background: "#fef2f2", color: "#991b1b", padding: 12, borderRadius: 8, fontSize: 14, border: "1px solid #fecaca" }}>
+                 {blockchainError}
+               </div>
+            ) : !blockchainHistory ? (
+               <div style={{ color: "#64748b", fontSize: 14, fontStyle: "italic" }}>Loading ledger data...</div>
+            ) : blockchainHistory.length === 0 ? (
+               <div style={{ color: "#64748b", fontSize: 14 }}>No blockchain records found for this shipment.</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {blockchainHistory.map((rec, idx) => (
+                  <div key={idx} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <div style={{ fontWeight: 600, color: "#0f172a", fontSize: 14 }}>{rec.eventType}</div>
+                      <div style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace", background: "#e2e8f0", padding: "2px 6px", borderRadius: 4 }}>ID: {rec.eventId}</div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, fontSize: 13, color: "#475569" }}>
+                      <div>
+                        <span style={{ color: "#94a3b8" }}>Location:</span> <br/> {rec.location || "N/A"}
+                      </div>
+                      <div>
+                        <span style={{ color: "#94a3b8" }}>Recorded At:</span> <br/> {new Date(rec.timestamp).toLocaleString()}
+                      </div>
+                      {rec.recordedBy && (
+                        <div style={{ gridColumn: "1 / -1" }}>
+                          <span style={{ color: "#94a3b8" }}>Recorded By:</span> <br/> {rec.recordedBy}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+        </div>
+
+        {/* RIGHT COLUMN: Operations & Timeline */}
+        <div style={{ flex: "1 1 35%", minWidth: 320, display: "flex", flexDirection: "column", gap: 24 }}>
+          
+          {/* Action Controls (Role Aware) */}
+          {showControls ? (
+            <section style={{ background: "#fff", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+              <h2 style={{ margin: "0 0 20px 0", fontSize: 16, color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Operational Controls</h2>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+                {canCreateEvent && (
+                  <div>
+                    <h3 style={{ marginTop: 0, fontSize: 14, color: "#334155", marginBottom: 12 }}>Record New Event</h3>
+                    <form onSubmit={handleCreateEvent} className={formStyles.form} style={{ gap: 12 }}>
+                      {eventError && <div className={formStyles.error}>{eventError}</div>}
+                      <select value={eventType} onChange={e => setEventType(e.target.value)} className={formStyles.input}>
+                        <option value="CREATED">Created</option>
+                        <option value="DISPATCHED">Dispatched</option>
+                        <option value="IN_TRANSIT">In Transit</option>
+                        <option value="RECEIVED">Received</option>
+                        <option value="DELAYED">Delayed</option>
+                        <option value="HAZARD">Hazard</option>
+                      </select>
+                      <input placeholder="Location" value={eventLocation} onChange={e => setEventLocation(e.target.value)} className={formStyles.input} />
+                      <textarea placeholder="Description" value={eventDesc} onChange={e => setEventDesc(e.target.value)} className={formStyles.input} style={{ resize: "vertical", minHeight: 60 }} />
+                      <button type="submit" className={formStyles.button}>Submit Event</button>
+                    </form>
+                  </div>
+                )}
+                
+                {canCreateCustody && (
+                  <div>
+                    <h3 style={{ marginTop: 0, fontSize: 14, color: "#334155", marginBottom: 12 }}>Transfer Custody</h3>
+                    <form onSubmit={handleCreateCustody} className={formStyles.form} style={{ gap: 12 }}>
+                      {custodyError && <div className={formStyles.error}>{custodyError}</div>}
+                      <input required type="number" min="1" placeholder="To Org ID" value={toOrgId} onChange={e => setToOrgId(e.target.value === "" ? "" : Number(e.target.value))} className={formStyles.input} />
+                      <textarea placeholder="Notes" value={custodyNotes} onChange={e => setCustodyNotes(e.target.value)} className={formStyles.input} style={{ resize: "vertical", minHeight: 60 }} />
+                      <button type="submit" className={formStyles.button} style={{ background: "#8b5cf6", border: "1px solid #7c3aed" }}>Transfer Custody</button>
+                    </form>
+                  </div>
+                )}
+              </div>
+            </section>
+          ) : (
+            <section style={{ background: "#f8fafc", borderRadius: 12, padding: 24, display: "flex", alignItems: "center", justifyContent: "center", border: "1px dashed #cbd5e1" }}>
+              <p style={{ color: "#64748b", fontSize: 14, textAlign: "center" }}>You have read-only (Auditor) access to this shipment. Controls disabled.</p>
+            </section>
+          )}
+
+          {/* Shipment Journey Timeline */}
+          <section style={{ background: "#fff", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            <h2 style={{ margin: "0 0 20px 0", fontSize: 16, color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Journey Timeline</h2>
+            
+            {events.length === 0 && custodyTransfers.length === 0 ? (
+              <p style={{ color: "#64748b", fontSize: 14 }}>No journey activity recorded yet.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 0, position: "relative", marginTop: 8 }}>
+                {/* Vertical Line */}
+                <div style={{ position: "absolute", left: 15, top: 16, bottom: 20, width: 2, background: "#e2e8f0" }} />
+                
+                {[
+                  ...events.map(ev => ({ type: 'EVENT' as const, date: new Date(ev.occurred_at), data: ev })),
+                  ...custodyTransfers.map(ct => ({ type: 'CUSTODY' as const, date: new Date(ct.transferred_at), data: ct }))
+                ]
+                .sort((a, b) => b.date.getTime() - a.date.getTime())
+                .map((item, idx) => (
+                  <div key={`${item.type}-${item.data.id}`} style={{ display: "flex", gap: 16, position: "relative", paddingBottom: 24 }}>
+                    {/* Node marker */}
+                    <div style={{ 
+                      width: 32, height: 32, borderRadius: 16, flexShrink: 0, zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: item.type === 'CUSTODY' ? "#8b5cf6" : "#3b82f6", color: "white", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em",
+                      border: "4px solid #fff", boxShadow: "0 0 0 1px #e2e8f0", marginTop: 2
+                    }}>
+                      {item.type === 'CUSTODY' ? 'CT' : 'EV'}
+                    </div>
+                    
+                    {/* Content Card */}
+                    <div style={{ 
+                      flex: 1, padding: 16, borderRadius: 12,
+                      background: item.type === 'CUSTODY' ? "#faf5ff" : "#f0fdfa",
+                      border: `1px solid ${item.type === 'CUSTODY' ? '#e9d5ff' : '#ccfbf1'}`
+                    }}>
+                      {item.type === 'EVENT' ? (
+                        <>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                            <div style={{ fontWeight: 600, color: "#0f172a", fontSize: 14 }}>{(item.data as ShipmentEvent).event_type}</div>
+                            <div style={{ fontSize: 12, color: "#64748b", textAlign: "right" }}>
+                              {item.date.toLocaleDateString()}<br/>{item.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </div>
+                          </div>
+                          {(item.data as ShipmentEvent).location && (
+                            <div style={{ fontSize: 13, color: "#334155", display: "flex", alignItems: "center", gap: 4 }}>
+                              <span style={{ color: "#94a3b8" }}>📍</span> {(item.data as ShipmentEvent).location}
+                            </div>
+                          )}
+                          {(item.data as ShipmentEvent).description && (
+                            <div style={{ fontSize: 13, color: "#475569", marginTop: 8, padding: 8, background: "rgba(255,255,255,0.6)", borderRadius: 6 }}>
+                              {(item.data as ShipmentEvent).description}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                            <div style={{ fontWeight: 600, color: "#5b21b6", fontSize: 14 }}>Custody Transfer</div>
+                            <div style={{ fontSize: 12, color: "#64748b", textAlign: "right" }}>
+                              {item.date.toLocaleDateString()}<br/>{item.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 13, color: "#4c1d95", display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.6)", padding: 8, borderRadius: 6 }}>
+                            <span style={{ fontWeight: 500 }}>Org {(item.data as CustodyTransfer).from_organization_id}</span>
+                            <span style={{ color: "#a78bfa" }}>&rarr;</span>
+                            <span style={{ fontWeight: 500 }}>Org {(item.data as CustodyTransfer).to_organization_id}</span>
+                          </div>
+                          {(item.data as CustodyTransfer).notes && (
+                            <div style={{ fontSize: 13, color: "#475569", marginTop: 8 }}>
+                              <span style={{ color: "#94a3b8" }}>Notes:</span> {(item.data as CustodyTransfer).notes}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
     </main>
   );
 }

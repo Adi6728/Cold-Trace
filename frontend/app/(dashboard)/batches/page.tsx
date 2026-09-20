@@ -6,7 +6,8 @@ import { api, Batch, Product, AuthUserResponse } from "@/lib/api";
 import { canPerformAction } from "@/lib/rbac";
 import tableStyles from "../../components/Table.module.css";
 import formStyles from "../../components/Form.module.css";
-import badgeStyles from "../../components/Badge.module.css";
+import dashboardStyles from "../../components/Dashboard.module.css";
+import Badge from "../../components/Badge";
 
 export default function BatchesPage() {
   const router = useRouter();
@@ -102,14 +103,11 @@ export default function BatchesPage() {
   };
 
   const getStatusBadge = (batch: Batch) => {
-    // If backend already marked it DELIVERED or COMPLETED etc, we could use that.
-    // But typically batches are "ACTIVE" or "EXPIRED" for UI display.
     const isExpired = new Date(batch.expiry_date) < new Date();
-    
     if (isExpired) {
-      return <span className={`${badgeStyles.badge} ${badgeStyles.expired}`}>Expired</span>;
+      return <Badge status="error">Expired</Badge>;
     }
-    return <span className={`${badgeStyles.badge} ${badgeStyles.active}`}>Active</span>;
+    return <Badge status="active">Active</Badge>;
   };
 
   const displayedBatches = filterProductId 
@@ -117,34 +115,39 @@ export default function BatchesPage() {
     : batches;
 
   if (loading) {
-    return <main style={{ padding: 32 }}>Loading batches...</main>;
+    return <main className={dashboardStyles.dashboardContainer} style={{ padding: 32 }}>Loading batches...</main>;
   }
 
   if (error) {
     return (
-      <main style={{ padding: 32 }}>
+      <main className={dashboardStyles.dashboardContainer} style={{ padding: 32 }}>
         <div className={formStyles.errorText}>{error}</div>
       </main>
     );
   }
 
   return (
-    <main style={{ padding: 32, maxWidth: 1200, margin: "0 auto" }}>
-      <div className={tableStyles.tableHeader}>
-        <h1 className={tableStyles.tableTitle}>Batches Management</h1>
-        {filterProductId && (
-          <button 
-            onClick={() => {
-              setFilterProductId(null);
-              setProductId("");
-              window.history.pushState({}, '', '/batches');
-            }}
-            className={formStyles.button} 
-            style={{ background: "#64748b" }}
-          >
-            Clear Filter
-          </button>
-        )}
+    <main className={dashboardStyles.dashboardContainer}>
+      <div className={dashboardStyles.header}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <h1 className={dashboardStyles.pageTitle}>Production Batches</h1>
+            <p className={dashboardStyles.pageSubtitle}>Monitor manufacturing runs and track expiry dates.</p>
+          </div>
+          {filterProductId && (
+            <button 
+              onClick={() => {
+                setFilterProductId(null);
+                setProductId("");
+                window.history.pushState({}, '', '/batches');
+              }}
+              className={formStyles.button} 
+              style={{ background: "#f1f5f9", color: "#475569" }}
+            >
+              Clear Product Filter
+            </button>
+          )}
+        </div>
       </div>
 
       {canPerformAction(user?.role, "CREATE_BATCH") && (
@@ -221,7 +224,7 @@ export default function BatchesPage() {
             </div>
 
             <button type="submit" className={formStyles.button} disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Batch"}
+              {isSubmitting ? "Registering..." : "Register Batch"}
             </button>
           </form>
         </div>
@@ -229,7 +232,7 @@ export default function BatchesPage() {
 
       <div className={tableStyles.tableContainer}>
         <h2 className={tableStyles.tableTitle} style={{ marginBottom: 20 }}>
-          {filterProductId ? `Batches for Product ID: ${filterProductId}` : "All Batches"}
+          {filterProductId ? `Batches for Product: ${getProductName(filterProductId)}` : "All Batches"}
         </h2>
         
         {displayedBatches.length === 0 ? (
@@ -249,12 +252,15 @@ export default function BatchesPage() {
             <tbody>
               {displayedBatches.map((b) => (
                 <tr key={b.id}>
-                  <td style={{ fontWeight: 500 }}>{b.batch_number}</td>
-                  <td>{getProductName(b.product_id)}</td>
-                  <td>{b.quantity}</td>
+                  <td>
+                    <div style={{ fontWeight: 600, color: "#0f172a" }}>{b.batch_number}</div>
+                    <div style={{ fontSize: "12px", color: "#64748b" }}>ID: #{b.id}</div>
+                  </td>
+                  <td style={{ color: "#334155", fontWeight: 500 }}>{getProductName(b.product_id)}</td>
+                  <td>{b.quantity} units</td>
                   <td>{getStatusBadge(b)}</td>
-                  <td>{new Date(b.manufactured_at).toLocaleDateString()}</td>
-                  <td>{new Date(b.expiry_date).toLocaleDateString()}</td>
+                  <td style={{ color: "#64748b" }}>{new Date(b.manufactured_at).toLocaleDateString()}</td>
+                  <td style={{ color: "#64748b" }}>{new Date(b.expiry_date).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>

@@ -7,6 +7,8 @@ import { api, Product, AuthUserResponse, Batch } from "@/lib/api";
 import { canPerformAction } from "@/lib/rbac";
 import tableStyles from "../../components/Table.module.css";
 import formStyles from "../../components/Form.module.css";
+import dashboardStyles from "../../components/Dashboard.module.css";
+import Badge from "../../components/Badge";
 
 export default function ProductsPage() {
   const router = useRouter();
@@ -91,21 +93,22 @@ export default function ProductsPage() {
   };
 
   if (loading) {
-    return <main style={{ padding: 32 }}>Loading products...</main>;
+    return <main className={dashboardStyles.dashboardContainer} style={{ padding: 32 }}>Loading products...</main>;
   }
 
   if (error) {
     return (
-      <main style={{ padding: 32 }}>
+      <main className={dashboardStyles.dashboardContainer} style={{ padding: 32 }}>
         <div className={formStyles.errorText}>{error}</div>
       </main>
     );
   }
 
   return (
-    <main style={{ padding: 32, maxWidth: 1200, margin: "0 auto" }}>
-      <div className={tableStyles.tableHeader}>
-        <h1 className={tableStyles.tableTitle}>Products Management</h1>
+    <main className={dashboardStyles.dashboardContainer}>
+      <div className={dashboardStyles.header}>
+        <h1 className={dashboardStyles.pageTitle}>Products Directory</h1>
+        <p className={dashboardStyles.pageSubtitle}>Manage master product catalog and required storage conditions.</p>
       </div>
 
       {canPerformAction(user?.role, "CREATE_PRODUCT") && (
@@ -121,7 +124,7 @@ export default function ProductsPage() {
                 <input 
                   required 
                   className={formStyles.input}
-                  placeholder="e.g. mRNA Vaccine Batch"
+                  placeholder="e.g. mRNA Vaccine"
                   value={name} 
                   onChange={(e) => setName(e.target.value)} 
                 />
@@ -163,7 +166,7 @@ export default function ProductsPage() {
             </div>
 
             <button type="submit" className={formStyles.button} disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Product"}
+              {isSubmitting ? "Registering..." : "Register Product"}
             </button>
           </form>
         </div>
@@ -177,8 +180,7 @@ export default function ProductsPage() {
           <table className={tableStyles.table}>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Name</th>
+                <th>Product</th>
                 <th>Description</th>
                 <th>Storage Range</th>
                 <th>Batches</th>
@@ -188,16 +190,20 @@ export default function ProductsPage() {
             <tbody>
               {products.map((p) => (
                 <tr key={p.id}>
-                  <td>#{p.id}</td>
-                  <td style={{ fontWeight: 500 }}>{p.name}</td>
-                  <td style={{ color: "#64748b" }}>{p.description || "-"}</td>
-                  <td>{p.storage_min_temp}°C to {p.storage_max_temp}°C</td>
+                  <td>
+                    <div style={{ fontWeight: 600, color: "#0f172a" }}>{p.name}</div>
+                    <div style={{ fontSize: "12px", color: "#64748b" }}>ID: #{p.id}</div>
+                  </td>
+                  <td style={{ color: "#475569" }}>{p.description || "-"}</td>
+                  <td>
+                    <Badge status="default">{p.storage_min_temp}°C to {p.storage_max_temp}°C</Badge>
+                  </td>
                   <td>
                     <Link href={`/batches?product_id=${p.id}`} className={tableStyles.link}>
-                      {getBatchCount(p.id)} batches
+                      {getBatchCount(p.id)} {getBatchCount(p.id) === 1 ? 'batch' : 'batches'}
                     </Link>
                   </td>
-                  <td>{new Date(p.created_at).toLocaleDateString()}</td>
+                  <td style={{ color: "#64748b" }}>{new Date(p.created_at).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>

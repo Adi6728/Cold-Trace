@@ -14,8 +14,8 @@ const MENU_ITEMS = [
   { href: "/shipments", label: "Shipments", section: "Traceability" },
   { href: "/sensors", label: "Sensors", section: "Traceability" },
   { href: "/alerts", label: "Alerts", section: "Traceability" },
-  { href: "#", label: "Blockchain (Coming Soon)", section: "Verification", disabled: true },
-  { href: "#", label: "QR Verify (Coming Soon)", section: "Verification", disabled: true },
+  { href: "/blockchain", label: "Blockchain Audit", section: "Verification" },
+  { href: "/verify", label: "Public QR Verify", section: "Verification" },
 ];
 
 export default function Sidebar() {
@@ -34,7 +34,7 @@ export default function Sidebar() {
   }, []);
 
   const allowedItems = MENU_ITEMS.filter(item => 
-    item.disabled || canAccessRoute(user?.role, item.href)
+    canAccessRoute(user?.role, item.href)
   );
 
   const groupedItems = allowedItems.reduce((acc, item) => {
@@ -60,9 +60,8 @@ export default function Sidebar() {
               return (
                 <Link
                   key={item.label}
-                  href={item.disabled ? "#" : item.href}
+                  href={item.href}
                   className={`${styles.navLink} ${isActive ? styles.navLinkActive : ""}`}
-                  style={{ opacity: item.disabled ? 0.5 : 1, cursor: item.disabled ? "not-allowed" : "pointer" }}
                 >
                   {item.label}
                 </Link>

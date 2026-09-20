@@ -3,14 +3,21 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api, Alert } from "@/lib/api";
-
+import { api, Alert, AuthUserResponse } from "@/lib/api";
+import { canPerformAction } from "@/lib/rbac";
+import dashboardStyles from "../../components/Dashboard.module.css";
+import tableStyles from "../../components/Table.module.css";
+import formStyles from "../../components/Form.module.css";
+import Badge from "../../components/Badge";
+import DashboardCard from "../../components/DashboardCard";
 
 export default function AlertsPage() {
   const router = useRouter();
+  const [user, setUser] = useState<AuthUserResponse | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   useEffect(() => {
     fetchAlerts();
@@ -25,9 +32,11 @@ export default function AlertsPage() {
     
     setLoading(true);
     try {
-      // API Gap Workaround: No global /alerts endpoint exists.
-      // We must fetch all shipments first, then fetch alerts for each shipment.
-      const shipments = await api.getShipments(token);
+      const [userData, shipments] = await Promise.all([
+        api.me(token),
+        api.getShipments(token)
+      ]);
+      setUser(userData);
       
       const allAlertsPromises = shipments.map(s => 
         api.getShipmentAlerts(token, s.id).catch(() => [] as Alert[])
@@ -50,115 +59,171 @@ export default function AlertsPage() {
   async function handleAcknowledge(alertId: number) {
     const token = localStorage.getItem("access_token");
     if (!token) return;
+    setActionLoading(alertId);
     try {
       await api.acknowledgeAlert(token, alertId);
-      // Refresh alerts after action
       await fetchAlerts();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to acknowledge alert");
+    } finally {
+      setActionLoading(null);
     }
   }
 
   async function handleResolve(alertId: number) {
     const token = localStorage.getItem("access_token");
     if (!token) return;
+    setActionLoading(alertId);
     try {
       await api.resolveAlert(token, alertId);
-      // Refresh alerts after action
       await fetchAlerts();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to resolve alert");
+    } finally {
+      setActionLoading(null);
     }
   }
 
   if (loading) {
-    return <main style={{ padding: 32 }}>Loading alerts...</main>;
+    return <main className={dashboardStyles.dashboardContainer} style={{ padding: 32 }}>Loading alerts...</main>;
   }
 
   if (error) {
-    return <main style={{ padding: 32, color: "#991b1b" }}>{error}</main>;
+    return (
+      <main className={dashboardStyles.dashboardContainer} style={{ padding: 32 }}>
+        <div style={{ color: "#dc2626", background: "#fef2f2", padding: 12, borderRadius: 8, border: "1px solid #fecaca" }}>
+          {error}
+        </div>
+      </main>
+    );
   }
 
+  const openCount = alerts.filter(a => a.status === 'OPEN').length;
+  const ackCount = alerts.filter(a => a.status === 'ACKNOWLEDGED').length;
+  const resolvedCount = alerts.filter(a => a.status === 'RESOLVED').length;
+  const hasActiveAlerts = openCount > 0;
+
   return (
-    <main style={{ maxWidth: 1000, margin: "0 auto", padding: 32 }}>
-
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, marginTop: 24 }}>
-        <h1 style={{ margin: 0 }}>Alerts</h1>
+    <main className={dashboardStyles.dashboardContainer}>
+      <div className={dashboardStyles.header}>
+        <h1 className={dashboardStyles.pageTitle}>Alert Center</h1>
+        <p className={dashboardStyles.pageSubtitle}>Monitor and resolve temperature anomalies across active shipments.</p>
       </div>
       
-      {/* API Gap Note */}
-      <div style={{ background: "#eff6ff", color: "#1e40af", padding: "12px 16px", borderRadius: 8, marginBottom: 24 }}>
-        <strong>Note:</strong> Alerts are aggregated client-side by fetching all shipments. A global <code>GET /api/v1/alerts</code> endpoint would optimize this.
+      <div className={dashboardStyles.statsGrid}>
+        <DashboardCard 
+          title="Open Alerts" 
+          value={openCount} 
+          icon="⚠️" 
+          type={hasActiveAlerts ? "error" : "default"}
+        />
+        <DashboardCard 
+          title="Acknowledged" 
+          value={ackCount} 
+          icon="👀" 
+          type={ackCount > 0 ? "warning" : "default"}
+        />
+        <DashboardCard 
+          title="Resolved" 
+          value={resolvedCount} 
+          icon="✅" 
+          type="default"
+        />
       </div>
 
-      <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 12px 30px rgba(15, 23, 42, 0.08)" }}>
+      <div className={tableStyles.tableContainer}>
+        <h2 className={tableStyles.tableTitle} style={{ marginBottom: 20 }}>All Alerts</h2>
         {alerts.length === 0 ? (
-          <p>No alerts found.</p>
+          <div className={tableStyles.emptyState}>No alerts found.</div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 14 }}>
+          <table className={tableStyles.table}>
             <thead>
-              <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                <th style={{ padding: 12 }}>ID</th>
-                <th style={{ padding: 12 }}>Severity</th>
-                <th style={{ padding: 12 }}>Status</th>
-                <th style={{ padding: 12 }}>Shipment ID</th>
-                <th style={{ padding: 12 }}>Sensor ID</th>
-                <th style={{ padding: 12 }}>Temp (°C)</th>
-                <th style={{ padding: 12 }}>Detected At</th>
-                <th style={{ padding: 12 }}>Actions</th>
+              <tr>
+                <th>Severity</th>
+                <th>Status</th>
+                <th>Shipment & Sensor</th>
+                <th>Latest Temp</th>
+                <th>Detected At</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {alerts.map((a) => (
-                <tr key={a.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                  <td style={{ padding: 12 }}>{a.id}</td>
-                  <td style={{ padding: 12 }}>
-                    <span style={{ 
-                      padding: "4px 8px", borderRadius: 4, fontWeight: "bold", fontSize: 12,
-                      background: a.severity === 'CRITICAL' ? '#fee2e2' : a.severity === 'HIGH' ? '#ffedd5' : '#fef3c7',
-                      color: a.severity === 'CRITICAL' ? '#991b1b' : a.severity === 'HIGH' ? '#9a3412' : '#92400e'
-                    }}>
-                      {a.severity}
-                    </span>
-                  </td>
-                  <td style={{ padding: 12 }}>{a.status}</td>
-                  <td style={{ padding: 12 }}>
-                    <Link href={`/shipments/${a.shipment_id}`} style={{ color: "#2563eb", textDecoration: "none" }}>
-                      {a.shipment_id}
-                    </Link>
-                  </td>
-                  <td style={{ padding: 12 }}>
-                    <Link href={`/sensors/${a.sensor_id}`} style={{ color: "#2563eb", textDecoration: "none" }}>
-                      {a.sensor_id}
-                    </Link>
-                  </td>
-                  <td style={{ padding: 12 }}>{a.latest_temperature}</td>
-                  <td style={{ padding: 12 }}>{new Date(a.detected_at).toLocaleString()}</td>
-                  <td style={{ padding: 12, display: "flex", gap: 8 }}>
-                    {a.status === 'OPEN' && (
-                      <button 
-                        onClick={() => handleAcknowledge(a.id)}
-                        style={{ padding: "6px 10px", borderRadius: 6, border: "none", background: "#f59e0b", color: "#fff", cursor: "pointer", fontSize: 12 }}
-                      >
-                        Ack
-                      </button>
-                    )}
-                    {(a.status === 'OPEN' || a.status === 'ACKNOWLEDGED') && (
-                      <button 
-                        onClick={() => handleResolve(a.id)}
-                        style={{ padding: "6px 10px", borderRadius: 6, border: "none", background: "#10b981", color: "#fff", cursor: "pointer", fontSize: 12 }}
-                      >
-                        Resolve
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {alerts.map((a) => {
+                const isCritical = a.severity === 'CRITICAL';
+                const isHigh = a.severity === 'HIGH';
+                const severityStyle = isCritical ? { color: "#dc2626", background: "#fef2f2" } : isHigh ? { color: "#ea580c", background: "#fff7ed" } : { color: "#d97706", background: "#fefce8" };
+                
+                let badgeStatus: "error" | "warning" | "default" | "success" = "default";
+                if (a.status === 'OPEN') badgeStatus = "error";
+                else if (a.status === 'ACKNOWLEDGED') badgeStatus = "warning";
+                else if (a.status === 'RESOLVED') badgeStatus = "success";
+
+                return (
+                  <tr key={a.id}>
+                    <td>
+                      <span style={{ 
+                        padding: "4px 8px", borderRadius: 6, fontWeight: 700, fontSize: "12px",
+                        ...severityStyle
+                      }}>
+                        {a.severity}
+                      </span>
+                    </td>
+                    <td><Badge status={badgeStatus}>{a.status}</Badge></td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: "#0f172a" }}>
+                        <Link href={`/shipments/${a.shipment_id}`} className={tableStyles.link}>
+                          Shipment #{a.shipment_id}
+                        </Link>
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#64748b" }}>
+                        Sensor: <Link href={`/sensors/${a.sensor_id}`} className={tableStyles.link}>#{a.sensor_id}</Link>
+                      </div>
+                    </td>
+                    <td>
+                      <span style={{ fontWeight: 600, color: "#0f172a" }}>{a.latest_temperature.toFixed(1)}°C</span>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 500, color: "#334155" }}>{new Date(a.detected_at).toLocaleDateString()}</div>
+                      <div style={{ fontSize: "12px", color: "#64748b" }}>{new Date(a.detected_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        {canPerformAction(user?.role, "MUTATE_SHIPMENT") && (
+                          <>
+                            {a.status === 'OPEN' && (
+                              <button 
+                                onClick={() => handleAcknowledge(a.id)}
+                                className={formStyles.button}
+                                disabled={actionLoading === a.id}
+                                style={{ background: "#f59e0b", padding: "6px 12px", fontSize: "12px" }}
+                              >
+                                {actionLoading === a.id ? "Wait..." : "Acknowledge"}
+                              </button>
+                            )}
+                            {(a.status === 'OPEN' || a.status === 'ACKNOWLEDGED') && (
+                              <button 
+                                onClick={() => handleResolve(a.id)}
+                                className={formStyles.button}
+                                disabled={actionLoading === a.id}
+                                style={{ background: "#10b981", padding: "6px 12px", fontSize: "12px" }}
+                              >
+                                {actionLoading === a.id ? "Wait..." : "Resolve"}
+                              </button>
+                            )}
+                          </>
+                        )}
+                        {!canPerformAction(user?.role, "MUTATE_SHIPMENT") && (a.status !== 'RESOLVED') && (
+                          <span style={{ fontSize: "12px", color: "#94a3b8", fontStyle: "italic" }}>Read Only</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
-      </section>
+      </div>
     </main>
   );
 }

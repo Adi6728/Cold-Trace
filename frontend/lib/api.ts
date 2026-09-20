@@ -103,6 +103,15 @@ export type CustodyTransfer = {
   created_at: string;
 };
 
+export type BlockchainRecord = {
+  eventId: string;
+  shipmentId: string;
+  eventType: string;
+  location: string;
+  timestamp: string;
+  recordedBy: string;
+};
+
 export type CustodyTransferCreate = {
   from_organization_id: number;
   to_organization_id: number;
@@ -229,6 +238,20 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  getShipmentBlockchainHistory: (token: string, shipmentId: number) =>
+    apiRequest<BlockchainRecord[]>(`/api/v1/shipments/${shipmentId}/blockchain-history`, { token }),
+  verifyShipmentPublic: (shipmentId: number) =>
+    apiRequest<{
+      shipment_id: number;
+      status: string;
+      batch_id: number;
+      origin_organization_id: number;
+      destination_organization_id: number;
+      created_at: string;
+      delivered_at: string | null;
+      is_blockchain_verified: boolean;
+      events_count: number;
+    }>(`/api/v1/shipments/${shipmentId}/verify`),
 
   // Sensors
   getSensors: (token: string, shipmentId?: number) => {
