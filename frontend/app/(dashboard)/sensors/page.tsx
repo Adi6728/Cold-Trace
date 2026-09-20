@@ -21,7 +21,10 @@ export default function SensorsPage() {
       return;
     }
     
-    api.getSensors(token)
+    api.me(token).then((userData) => {
+      const isPublicUser = userData.role === 'USER' && !userData.organization_id;
+      return isPublicUser ? api.getPublicSensors(token) : api.getSensors(token);
+    })
       .then((sensorsData) => {
         setSensors(sensorsData);
       })

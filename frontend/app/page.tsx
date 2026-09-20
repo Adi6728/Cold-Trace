@@ -58,14 +58,14 @@ export default function LandingPage() {
             <div className={styles.floatingCard}>
               <div className={styles.floatingCardHeader}>
                 <span className={styles.floatingCardKicker}>Live Shipment</span>
-                <span className={styles.floatingCardPlane}>✈</span>
+                <span className={styles.floatingCardPlane}>➔</span>
               </div>
               <h3 className={styles.floatingCardTitle}>SHIP-001</h3>
               <p className={styles.floatingCardRoute}>Delhi &rarr; Mumbai</p>
               
               <div className={styles.floatingCardMetrics}>
                 <div className={styles.floatingCardTemp}>
-                  🌡️ 4.8°C
+                  T: 4.8°C
                 </div>
                 <div className={styles.floatingCardStatus}>In Transit</div>
               </div>

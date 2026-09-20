@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 
 import { api } from "@/lib/api";
 
@@ -84,10 +85,13 @@ export default function LoginPage() {
               marginTop: 8
             }}
           >
-            {loading ? "Authenticating..." : "Log in"}
-          </button>
-        </form>
-      </div>
-    </main>
+              {loading ? "Authenticating..." : "Log in"}
+            </button>
+            <div style={{ textAlign: "center", fontSize: 14, color: "var(--text-secondary)", marginTop: 8 }}>
+              Don&apos;t have an account? <Link href="/register" style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: 600 }}>Sign up</Link>
+            </div>
+          </form>
+        </div>
+      </main>
   );
 }

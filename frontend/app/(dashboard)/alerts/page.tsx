@@ -29,14 +29,14 @@ export default function AlertsPage() {
     
     setLoading(true);
     try {
-      const [userData, shipments] = await Promise.all([
-        api.me(token),
-        api.getShipments(token)
-      ]);
+      const userData = await api.me(token);
       setUser(userData);
+      const isPublicUser = userData.role === 'USER' && !userData.organization_id;
+
+      const shipments = await (isPublicUser ? api.getPublicShipments(token) : api.getShipments(token));
       
       const allAlertsPromises = shipments.map(s => 
-        api.getShipmentAlerts(token, s.id).catch(() => [] as Alert[])
+        (isPublicUser ? api.getPublicShipmentAlerts(token, s.id) : api.getShipmentAlerts(token, s.id)).catch(() => [] as Alert[])
       );
       
       const alertsArrays = await Promise.all(allAlertsPromises);
@@ -115,19 +115,19 @@ export default function AlertsPage() {
         <DashboardCard 
           title="Open Alerts" 
           value={openCount} 
-          icon="⚠️" 
+          icon="⚠" 
           type={hasActiveAlerts ? "error" : "default"}
         />
         <DashboardCard 
           title="Acknowledged" 
           value={ackCount} 
-          icon="👀" 
+          icon="⚑" 
           type={ackCount > 0 ? "warning" : "default"}
         />
         <DashboardCard 
           title="Resolved" 
           value={resolvedCount} 
-          icon="✅" 
+          icon="✔" 
           type="default"
         />
       </div>
@@ -181,13 +181,14 @@ export default function AlertsPage() {
                       </div>
                     </td>
                     <td>
-                      <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{a.latest_temperature.toFixed(1)}°C</span>
+                      <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{a.latest_temperature !== undefined ? `${a.latest_temperature.toFixed(1)}°C` : "N/A"}</span>
                     </td>
                     <td>
                       <div style={{ fontWeight: 500, color: "var(--text-primary)" }}>{new Date(a.detected_at).toLocaleDateString()}</div>
                       <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{new Date(a.detected_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                     </td>
                     <td>
+
                       <div style={{ display: "flex", gap: 8 }}>
                         {canPerformAction(user?.role, "MUTATE_SHIPMENT") && (
                           <>

@@ -30,8 +30,8 @@ def acknowledge_alert_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Alert:
-    if current_user.role == UserRole.AUDITOR:
-        raise HTTPException(status_code=403, detail="Auditor role is read-only")
+    if current_user.role in {UserRole.AUDITOR, UserRole.USER}:
+        raise HTTPException(status_code=403, detail="Role is read-only")
         
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
     if not alert:
@@ -58,8 +58,8 @@ def resolve_alert_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Alert:
-    if current_user.role == UserRole.AUDITOR:
-        raise HTTPException(status_code=403, detail="Auditor role is read-only")
+    if current_user.role in {UserRole.AUDITOR, UserRole.USER}:
+        raise HTTPException(status_code=403, detail="Role is read-only")
         
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
     if not alert:

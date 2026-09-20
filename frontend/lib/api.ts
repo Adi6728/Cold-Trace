@@ -16,6 +16,14 @@ export type AuthUserResponse = {
   updated_at: string;
 };
 
+export interface RegisterPayload {
+  email: string;
+  password: string;
+  role: string;
+  admin_registration_key?: string;
+  organization_name?: string;
+}
+
 export type Product = {
   id: number;
   name: string;
@@ -191,6 +199,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
+  register: (payload: RegisterPayload) =>
+    apiRequest<AuthUserResponse>("/api/v1/auth/register", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   me: (token: string) => apiRequest<AuthUserResponse>("/api/v1/auth/me", { token }),
   
   // Products
@@ -252,6 +265,17 @@ export const api = {
       is_blockchain_verified: boolean;
       events_count: number;
     }>(`/api/v1/shipments/${shipmentId}/verify`),
+
+  // Public General Read
+  getPublicShipments: (token: string) => apiRequest<Shipment[]>("/api/v1/public/shipments", { token }),
+  getPublicShipment: (token: string, id: number) => apiRequest<Shipment>(`/api/v1/public/shipments/${id}`, { token }),
+  getPublicShipmentEvents: (token: string, shipmentId: number) =>
+    apiRequest<ShipmentEvent[]>(`/api/v1/public/shipments/${shipmentId}/events`, { token }),
+  getPublicSensorsForShipment: (token: string, shipmentId: number) => 
+    apiRequest<Sensor[]>(`/api/v1/public/shipments/${shipmentId}/sensors`, { token }),
+  getPublicShipmentAlerts: (token: string, shipmentId: number) =>
+    apiRequest<Alert[]>(`/api/v1/public/shipments/${shipmentId}/alerts`, { token }),
+  getPublicSensors: (token: string) => apiRequest<Sensor[]>("/api/v1/public/sensors", { token }),
 
   // Sensors
   getSensors: (token: string, shipmentId?: number) => {

@@ -55,8 +55,9 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
       try {
         const userData = await api.me(token!);
         setUser(userData);
+        const isPublicUser = userData.role === 'USER' && !userData.organization_id;
         
-        const shipmentData = await api.getShipment(token!, Number(id));
+        const shipmentData = await (isPublicUser ? api.getPublicShipment(token!, Number(id)) : api.getShipment(token!, Number(id)));
         setShipment(shipmentData);
 
         // Load Batch and Product
@@ -72,9 +73,9 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
 
         // Parallel load of events, custody, alerts, blockchain
         const [eventsData, custodyData, alertsData, bcData] = await Promise.all([
-          api.getShipmentEvents(token!, Number(id)).catch(() => [] as ShipmentEvent[]),
-          api.getCustodyTransfers(token!, Number(id)).catch(() => [] as CustodyTransfer[]),
-          api.getShipmentAlerts(token!, Number(id)).catch(() => [] as Alert[]),
+          isPublicUser ? api.getPublicShipmentEvents(token!, Number(id)).catch(() => [] as ShipmentEvent[]) : api.getShipmentEvents(token!, Number(id)).catch(() => [] as ShipmentEvent[]),
+          isPublicUser ? Promise.resolve([]) : api.getCustodyTransfers(token!, Number(id)).catch(() => [] as CustodyTransfer[]),
+          isPublicUser ? api.getPublicShipmentAlerts(token!, Number(id)).catch(() => [] as Alert[]) : api.getShipmentAlerts(token!, Number(id)).catch(() => [] as Alert[]),
           api.getShipmentBlockchainHistory(token!, Number(id)).catch(err => {
             setBlockchainError(err.message || "Fabric unavailable");
             return null;
@@ -88,12 +89,14 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
 
         // Load sensors using new shipmentId filter capability
         try {
-          const allSensors = await api.getSensors(token!, Number(id));
+          const allSensors = await (isPublicUser ? api.getPublicSensorsForShipment(token!, Number(id)) : api.getSensors(token!, Number(id)));
           const matchedSensor = allSensors[0];
           if (matchedSensor) {
             setSensor(matchedSensor);
-            const readingsData = await api.getSensorReadings(token!, matchedSensor.id);
-            setReadings(readingsData);
+            if (!isPublicUser) {
+              const readingsData = await api.getSensorReadings(token!, matchedSensor.id);
+              setReadings(readingsData);
+            }
           }
         } catch (e) {
           console.warn("Failed to load sensors or readings", e);
@@ -354,8 +357,8 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
                     
                     <div style={{ fontSize: 14, color: "var(--text-primary)", background: "rgba(255,255,255,0.5)", padding: 12, borderRadius: 8 }}>
                       <div style={{ display: "flex", gap: 16, marginBottom: 8 }}>
-                        <div><span style={{ color: "var(--text-secondary)" }}>Sensor:</span> {al.sensor_id}</div>
-                        <div><span style={{ color: "var(--text-secondary)" }}>Latest Temp:</span> <strong>{al.latest_temperature}°C</strong></div>
+                        <div><span style={{ color: "var(--text-secondary)" }}>Sensor:</span> {al.sensor_id ?? "N/A"}</div>
+                        <div><span style={{ color: "var(--text-secondary)" }}>Latest Temp:</span> <strong>{al.latest_temperature !== undefined ? `${al.latest_temperature}°C` : "N/A"}</strong></div>
                       </div>
                       {product && (
                         <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 8 }}>
@@ -402,7 +405,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
           <section style={{ background: "var(--bg-surface)", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "var(--shadow-sm)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>
               <h2 style={{ margin: 0, fontSize: 16, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 8 }}>
-                🔗 Blockchain Verification
+                ⚯ Blockchain Verification
               </h2>
               <Badge status={blockchainHistory ? "success" : blockchainError ? "error" : "default"}>
                 {blockchainHistory ? "VERIFIED" : blockchainError ? "UNAVAILABLE" : "LOADING"}
@@ -540,7 +543,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
                           </div>
                           {(item.data as ShipmentEvent).location && (
                             <div style={{ fontSize: 13, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 4 }}>
-                              <span style={{ color: "var(--text-secondary)" }}>📍</span> {(item.data as ShipmentEvent).location}
+                              <span style={{ color: "var(--text-secondary)" }}>⌖</span> {(item.data as ShipmentEvent).location}
                             </div>
                           )}
                           {(item.data as ShipmentEvent).description && (

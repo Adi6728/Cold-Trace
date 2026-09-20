@@ -30,12 +30,16 @@ export default function DashboardPage() {
 
     async function fetchDashboard(validToken: string) {
       try {
-        const [user, products, batches, shipments, sensors] = await Promise.all([
-          api.me(validToken).catch(() => null),
+        const user = await api.me(validToken).catch(() => null);
+        if (!user) throw new Error("Not logged in");
+
+        const isPublicUser = user.role === 'USER' && !user.organization_id;
+
+        const [products, batches, shipments, sensors] = await Promise.all([
           api.getProducts(validToken).catch(() => []),
           api.getBatches(validToken).catch(() => []),
-          api.getShipments(validToken).catch(() => []),
-          api.getSensors(validToken).catch(() => [])
+          isPublicUser ? api.getPublicShipments(validToken).catch(() => []) : api.getShipments(validToken).catch(() => []),
+          isPublicUser ? api.getPublicSensors(validToken).catch(() => []) : api.getSensors(validToken).catch(() => [])
         ]);
 
         const activeShipments = shipments.filter((s: Shipment) => s.status !== "DELIVERED");
@@ -49,8 +53,8 @@ export default function DashboardPage() {
           activeShipments.map(async (s: Shipment) => {
             try {
               const [events, alerts] = await Promise.all([
-                api.getShipmentEvents(validToken, s.id).catch(() => []),
-                api.getShipmentAlerts(validToken, s.id).catch(() => [])
+                isPublicUser ? api.getPublicShipmentEvents(validToken, s.id).catch(() => []) : api.getShipmentEvents(validToken, s.id).catch(() => []),
+                isPublicUser ? api.getPublicShipmentAlerts(validToken, s.id).catch(() => []) : api.getShipmentAlerts(validToken, s.id).catch(() => [])
               ]);
               allEvents.push(...events.map((e: ShipmentEvent) => ({ ...e, shipmentId: s.id })));
               allAlerts.push(...alerts.map((a: Alert) => ({ ...a, shipmentId: s.id })));

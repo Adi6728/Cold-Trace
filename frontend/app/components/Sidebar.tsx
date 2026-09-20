@@ -48,7 +48,7 @@ export default function Sidebar() {
   return (
     <aside className={styles.sidebar}>
       <div className={styles.brand}>
-        <span className={styles.brandIcon}>❄️</span>
+        <span className={styles.brandIcon}>◆</span>
         ColdChain
       </div>
       <div className={styles.navContainer}>

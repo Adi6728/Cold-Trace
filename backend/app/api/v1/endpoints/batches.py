@@ -23,7 +23,7 @@ def list_batches_endpoint(
 ) -> list[Batch]:
     if current_user.role in {UserRole.LOGISTICS, UserRole.WAREHOUSE}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to list batches.")
-    if current_user.organization_id is None and current_user.role is not UserRole.ADMIN:
+    if current_user.organization_id is None and current_user.role not in {UserRole.ADMIN, UserRole.USER}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="An organization assignment is required.")
     if current_user.organization_id is not None and product_id is not None:
         product = db.get(Product, product_id)
@@ -36,7 +36,7 @@ def list_batches_endpoint(
 def get_batch_endpoint(batch_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> Batch:
     if current_user.role in {UserRole.LOGISTICS, UserRole.WAREHOUSE}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to view batches.")
-    if current_user.role not in {UserRole.ADMIN, UserRole.MANUFACTURER, UserRole.HOSPITAL, UserRole.AUDITOR}:
+    if current_user.role not in {UserRole.ADMIN, UserRole.MANUFACTURER, UserRole.HOSPITAL, UserRole.AUDITOR, UserRole.USER}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions.")
     return get_batch_for_user(db, current_user, batch_id)
 

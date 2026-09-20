@@ -26,9 +26,15 @@ export default function ShipmentsPage() {
       return;
     }
     
-    Promise.all([api.me(token), api.getShipments(token), api.getBatches(token)])
-      .then(([userData, shipmentsData, batchesData]) => {
-        setUser(userData);
+    api.me(token).then((userData) => {
+      setUser(userData);
+      const isPublicUser = userData.role === 'USER' && !userData.organization_id;
+      return Promise.all([
+        isPublicUser ? api.getPublicShipments(token) : api.getShipments(token),
+        api.getBatches(token)
+      ]);
+    })
+      .then(([shipmentsData, batchesData]) => {
         setShipments(shipmentsData);
         setBatches(batchesData);
       })

@@ -12,6 +12,14 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=8)
 
 
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=8)
+    role: UserRole
+    admin_registration_key: str | None = None
+    organization_name: str | None = Field(default=None, description="Required for non-USER roles to associate or create an organization.")
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

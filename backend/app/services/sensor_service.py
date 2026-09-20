@@ -35,7 +35,7 @@ class SensorService:
     def list_sensors_for_user(db: Session, user: User, organization_id: Optional[int] = None, shipment_id: Optional[int] = None, skip: int = 0, limit: int = 100) -> list[Sensor]:
         from app.core.permissions import UserRole
         if user.role not in {UserRole.ADMIN, UserRole.MANUFACTURER, UserRole.LOGISTICS, UserRole.WAREHOUSE, UserRole.HOSPITAL, UserRole.AUDITOR}:
-            raise HTTPException(status_code=403, detail="Insufficient permissions.")
+            raise HTTPException(status_code=403, detail="Insufficient permissions to view sensors")
             
         org_id = organization_id or user.organization_id
         if user.organization_id is not None and org_id != user.organization_id:
@@ -49,7 +49,7 @@ class SensorService:
             )
         else:
             if user.role not in {UserRole.ADMIN, UserRole.AUDITOR}:
-                raise HTTPException(status_code=403, detail="An organization assignment is required.")
+                raise HTTPException(status_code=403, detail="Organization required to list sensors")
         
         if shipment_id is not None:
             query = query.filter(Sensor.shipment_id == shipment_id)

@@ -61,7 +61,7 @@ function VerifyPageContent() {
       <div style={{ maxWidth: 600, margin: "0 auto" }}>
         
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <div style={{ fontSize: "40px", marginBottom: 16 }}>🔍</div>
+          <div style={{ fontSize: "40px", marginBottom: 16 }}>⌕</div>
           <h1 style={{ margin: "0 0 8px 0", color: "var(--text-primary)", fontSize: "28px" }}>ColdChain Verify</h1>
           <p style={{ margin: 0, color: "var(--text-secondary)" }}>Public shipment traceability and authenticity portal.</p>
         </div>
@@ -88,7 +88,7 @@ function VerifyPageContent() {
 
         {error && (
           <div style={{ background: "var(--bg-danger)", color: "var(--color-danger)", padding: 20, borderRadius: "var(--radius-sm)", border: "1px solid #FFBDAD", textAlign: "center" }}>
-            <div style={{ fontSize: "24px", marginBottom: 8 }}>❌</div>
+            <div style={{ fontSize: "24px", marginBottom: 8 }}>✖</div>
             <div style={{ fontWeight: 600 }}>Verification Failed</div>
             <div style={{ fontSize: "14px", marginTop: 4 }}>{error}</div>
           </div>
@@ -100,13 +100,13 @@ function VerifyPageContent() {
             <div style={{ background: result.is_blockchain_verified ? "var(--bg-success)" : "var(--bg-warning)", borderBottom: "1px solid var(--border-light)", padding: "24px", textAlign: "center" }}>
               {result.is_blockchain_verified ? (
                 <>
-                  <div style={{ fontSize: "40px", marginBottom: 8 }}>✅</div>
+                  <div style={{ fontSize: "40px", marginBottom: 8 }}>✔</div>
                   <h2 style={{ margin: 0, color: "var(--color-success)", fontSize: "20px" }}>Authentic Shipment</h2>
                   <div style={{ color: "var(--color-success)", fontSize: "14px", marginTop: 4, fontWeight: 500 }}>Verified by Hyperledger Fabric</div>
                 </>
               ) : (
                 <>
-                  <div style={{ fontSize: "40px", marginBottom: 8 }}>⚠️</div>
+                  <div style={{ fontSize: "40px", marginBottom: 8 }}>⚠</div>
                   <h2 style={{ margin: 0, color: "var(--color-warning)", fontSize: "20px" }}>Unverified Origin</h2>
                   <div style={{ color: "var(--color-warning)", fontSize: "14px", marginTop: 4, fontWeight: 500 }}>Blockchain signature missing or unavailable</div>
                 </>

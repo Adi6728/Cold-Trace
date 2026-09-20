@@ -16,6 +16,7 @@ class UserRole(str, Enum):
     WAREHOUSE = "WAREHOUSE"
     HOSPITAL = "HOSPITAL"
     AUDITOR = "AUDITOR"
+    USER = "USER"
 
 
 def _get_current_user():

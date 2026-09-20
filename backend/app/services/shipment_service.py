@@ -28,6 +28,10 @@ def get_shipment_for_user(db: Session, user: User, shipment_id: int) -> Shipment
     shipment = get_shipment_or_404(db, shipment_id)
     if user.organization_id is not None and shipment.origin_organization_id != user.organization_id and shipment.destination_organization_id != user.organization_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions for this organization.")
+    elif user.organization_id is None:
+        from app.core.permissions import UserRole
+        if user.role not in {UserRole.ADMIN, UserRole.AUDITOR}:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="An organization assignment is required.")
     return shipment
 
 
