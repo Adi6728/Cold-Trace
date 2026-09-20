@@ -147,6 +147,28 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
     }
   }
 
+  async function handleAcknowledgeAlert(alertId: number) {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    try {
+      const updatedAlert = await api.acknowledgeAlert(token, alertId);
+      setAlerts(alerts.map(a => a.id === alertId ? updatedAlert : a));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to acknowledge alert");
+    }
+  }
+
+  async function handleResolveAlert(alertId: number) {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    try {
+      const updatedAlert = await api.resolveAlert(token, alertId);
+      setAlerts(alerts.map(a => a.id === alertId ? updatedAlert : a));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to resolve alert");
+    }
+  }
+
   if (loading) {
     return <main style={{ padding: 32 }}>Loading shipment details...</main>;
   }
@@ -163,6 +185,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
 
   const canCreateEvent = user && canPerformAction(user.role, "CREATE_SHIPMENT_EVENT");
   const canCreateCustody = user && canPerformAction(user.role, "CREATE_CUSTODY_TRANSFER");
+  const canManageAlerts = user && canPerformAction(user.role, "MANAGE_ALERTS");
   const showControls = canCreateEvent || canCreateCustody;
 
   return (
@@ -257,42 +280,65 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
-        {/* Timeline */}
-        <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)" }}>
-          <h2 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Timeline</h2>
-          {events.length === 0 ? <p style={{ color: "#6b7280" }}>No events recorded.</p> : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {events.slice().sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime()).map(ev => (
-                <div key={ev.id} style={{ borderLeft: "3px solid #e5e7eb", paddingLeft: 16 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ fontWeight: 600 }}>{ev.event_type}</div>
-                    <div style={{ fontSize: 12, color: "#6b7280" }}>{new Date(ev.occurred_at).toLocaleString()}</div>
-                  </div>
-                  {ev.location && <div style={{ fontSize: 14, color: "#374151", marginTop: 4 }}>{ev.location}</div>}
-                  {ev.description && <div style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>{ev.description}</div>}
+      {/* Shipment Journey Timeline */}
+      <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)", marginTop: 32 }}>
+        <h2 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Shipment Journey</h2>
+        {events.length === 0 && custodyTransfers.length === 0 ? <p style={{ color: "#6b7280" }}>No journey activity recorded yet.</p> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 0, position: "relative" }}>
+            {/* Vertical Line */}
+            <div style={{ position: "absolute", left: 15, top: 20, bottom: 20, width: 2, background: "#e2e8f0" }} />
+            
+            {[
+              ...events.map(ev => ({ type: 'EVENT' as const, date: new Date(ev.occurred_at), data: ev })),
+              ...custodyTransfers.map(ct => ({ type: 'CUSTODY' as const, date: new Date(ct.transferred_at), data: ct }))
+            ]
+            .sort((a, b) => b.date.getTime() - a.date.getTime())
+            .map((item, idx) => (
+              <div key={`${item.type}-${item.data.id}`} style={{ display: "flex", gap: 16, position: "relative", paddingBottom: 32 }}>
+                {/* Node marker */}
+                <div style={{ 
+                  width: 32, height: 32, borderRadius: 16, flexShrink: 0, zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                  background: item.type === 'CUSTODY' ? "#8b5cf6" : "#3b82f6", color: "white", fontSize: 12, fontWeight: "bold",
+                  border: "4px solid #fff", boxShadow: "0 0 0 1px #e2e8f0"
+                }}>
+                  {item.type === 'CUSTODY' ? 'CT' : 'EV'}
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Custody Transfers */}
-        <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)" }}>
-          <h2 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Custody Transfers</h2>
-          {custodyTransfers.length === 0 ? <p style={{ color: "#6b7280" }}>No transfers recorded.</p> : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {custodyTransfers.slice().sort((a, b) => new Date(b.transferred_at).getTime() - new Date(a.transferred_at).getTime()).map(ct => (
-                <div key={ct.id} style={{ background: "#f9fafb", padding: 12, borderRadius: 8, border: "1px solid #f3f4f6" }}>
-                  <div style={{ fontWeight: 500 }}>Org {ct.from_organization_id} &rarr; Org {ct.to_organization_id}</div>
-                  <div style={{ fontSize: 12, color: "#6b7280", margin: "4px 0" }}>{new Date(ct.transferred_at).toLocaleString()}</div>
-                  {ct.notes && <div style={{ fontSize: 14, color: "#4b5563" }}>{ct.notes}</div>}
+                
+                {/* Content Card */}
+                <div style={{ 
+                  flex: 1, padding: 16, borderRadius: 8,
+                  background: item.type === 'CUSTODY' ? "#f5f3ff" : "#f0fdfa",
+                  border: `1px solid ${item.type === 'CUSTODY' ? '#ddd6fe' : '#ccfbf1'}`
+                }}>
+                  {item.type === 'EVENT' ? (
+                    <>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div style={{ fontWeight: 600, color: "#0f172a" }}>Event: {(item.data as ShipmentEvent).event_type}</div>
+                        <div style={{ fontSize: 12, color: "#64748b" }}>{item.date.toLocaleString()}</div>
+                      </div>
+                      {(item.data as ShipmentEvent).location && <div style={{ fontSize: 14, color: "#334155", marginTop: 4 }}>📍 {(item.data as ShipmentEvent).location}</div>}
+                      {(item.data as ShipmentEvent).description && <div style={{ fontSize: 14, color: "#475569", marginTop: 4 }}>{(item.data as ShipmentEvent).description}</div>}
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div style={{ fontWeight: 600, color: "#4c1d95" }}>Custody Transfer</div>
+                        <div style={{ fontSize: 12, color: "#64748b" }}>{item.date.toLocaleString()}</div>
+                      </div>
+                      <div style={{ fontSize: 14, color: "#5b21b6", marginTop: 4, display: "flex", alignItems: "center", gap: 8 }}>
+                        <span>Org {(item.data as CustodyTransfer).from_organization_id}</span>
+                        <span>&rarr;</span>
+                        <span>Org {(item.data as CustodyTransfer).to_organization_id}</span>
+                      </div>
+                      {(item.data as CustodyTransfer).notes && <div style={{ fontSize: 14, color: "#475569", marginTop: 8 }}>{(item.data as CustodyTransfer).notes}</div>}
+                    </>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
         {/* Alerts Section */}
@@ -300,22 +346,53 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
           <h2 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Alerts</h2>
           {alerts.length === 0 ? <p style={{ color: "#6b7280" }}>No active alerts.</p> : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {alerts.slice().sort((a, b) => new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime()).map(al => (
+              {alerts.slice().sort((a, b) => new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime()).map(al => {
+                const isResolved = al.status === "RESOLVED";
+                const isAcknowledged = al.status === "ACKNOWLEDGED";
+                const isOpen = al.status === "OPEN";
+
+                return (
                 <div key={al.id} style={{ 
-                  background: al.severity === 'CRITICAL' ? '#fee2e2' : al.severity === 'HIGH' ? '#ffedd5' : '#fef3c7',
+                  background: isResolved ? '#f8fafc' : al.severity === 'CRITICAL' ? '#fee2e2' : al.severity === 'HIGH' ? '#ffedd5' : '#fef3c7',
                   padding: 16, borderRadius: 8, border: "1px solid rgba(0,0,0,0.05)" 
                 }}>
-                  <div style={{ fontWeight: 600, color: al.severity === 'CRITICAL' ? '#991b1b' : al.severity === 'HIGH' ? '#9a3412' : '#92400e', display: 'flex', justifyContent: 'space-between' }}>
+                  <div style={{ fontWeight: 600, color: isResolved ? '#475569' : al.severity === 'CRITICAL' ? '#991b1b' : al.severity === 'HIGH' ? '#9a3412' : '#92400e', display: 'flex', justifyContent: 'space-between', alignItems: "center" }}>
                     <span>{al.severity} Alert</span>
-                    <Badge status={al.status === 'OPEN' ? 'error' : 'success'}>{al.status}</Badge>
+                    <Badge status={isOpen ? 'error' : isAcknowledged ? 'warning' : 'success'}>{al.status}</Badge>
                   </div>
-                  <div style={{ fontSize: 14, marginTop: 8 }}>Sensor: {al.sensor_id} | Latest: {al.latest_temperature}°C</div>
-                  {al.message && <div style={{ fontSize: 14, marginTop: 4 }}>{al.message}</div>}
-                  <div style={{ fontSize: 12, marginTop: 8, color: "#4b5563" }}>
-                    Detected: {new Date(al.detected_at).toLocaleString()}
+                  <div style={{ fontSize: 14, marginTop: 8 }}>Sensor: {al.sensor_id} | Latest Temp: {al.latest_temperature}°C</div>
+                  {product && (
+                    <div style={{ fontSize: 12, marginTop: 2, color: "#64748b" }}>
+                      Allowed Range: {product.storage_min_temp}°C to {product.storage_max_temp}°C
+                    </div>
+                  )}
+                  {al.message && <div style={{ fontSize: 14, marginTop: 8 }}>{al.message}</div>}
+                  <div style={{ fontSize: 12, marginTop: 12, color: "#4b5563" }}>
+                    <div>Detected: {new Date(al.detected_at).toLocaleString()}</div>
+                    {al.acknowledged_at && <div>Acknowledged: {new Date(al.acknowledged_at).toLocaleString()}</div>}
+                    {al.resolved_at && <div>Resolved: {new Date(al.resolved_at).toLocaleString()}</div>}
                   </div>
+                  
+                  {canManageAlerts && !isResolved && (
+                    <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+                      {isOpen && (
+                        <button 
+                          onClick={() => handleAcknowledgeAlert(al.id)}
+                          style={{ padding: "6px 12px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 4, cursor: "pointer", fontSize: 12 }}
+                        >
+                          Acknowledge
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => handleResolveAlert(al.id)}
+                        style={{ padding: "6px 12px", background: "#10b981", color: "white", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 12 }}
+                      >
+                        Resolve
+                      </button>
+                    </div>
+                  )}
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </section>

@@ -22,12 +22,17 @@ def list_shipment_alerts_endpoint(
     return shipment.alerts
 
 
+from app.core.permissions import UserRole
+
 @router.patch("/alerts/{alert_id}/acknowledge", response_model=AlertRead)
 def acknowledge_alert_endpoint(
     alert_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Alert:
+    if current_user.role == UserRole.AUDITOR:
+        raise HTTPException(status_code=403, detail="Auditor role is read-only")
+        
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
@@ -53,6 +58,9 @@ def resolve_alert_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Alert:
+    if current_user.role == UserRole.AUDITOR:
+        raise HTTPException(status_code=403, detail="Auditor role is read-only")
+        
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")

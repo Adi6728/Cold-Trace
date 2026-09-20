@@ -44,10 +44,22 @@ def test_alert_generation_and_recovery():
     )
     db_session.add(admin)
     db_session.commit()
+    
+    auditor = User(
+        email=f"auditor-{uuid.uuid4()}@example.com",
+        password_hash=hash_password("Password123!"),
+        organization_id=org_a.id,
+        role=UserRole.AUDITOR,
+        is_active=True,
+    )
+    db_session.add(auditor)
+    db_session.commit()
 
     client = TestClient(app)
     token = create_access_token(admin.id)
     admin_token_headers = {"Authorization": f"Bearer {token}"}
+    auditor_token = create_access_token(auditor.id)
+    auditor_token_headers = {"Authorization": f"Bearer {auditor_token}"}
 
     # 1. Setup Data
     product = Product(name="Vaccine A", description="Test", manufacturer_id=org_a.id, storage_min_temp=2.0, storage_max_temp=8.0)
@@ -147,6 +159,12 @@ def test_alert_generation_and_recovery():
     new_alerts = db_session.query(Alert).filter_by(shipment_id=shipment.id, status=AlertStatus.OPEN).all()
     assert len(new_alerts) == 1
     alert_id = new_alerts[0].id
+    
+    # AUDITOR should get 403
+    res_auditor = client.patch(f"/api/v1/alerts/{alert_id}/acknowledge", headers=auditor_token_headers)
+    assert res_auditor.status_code == 403
+    res_auditor = client.patch(f"/api/v1/alerts/{alert_id}/resolve", headers=auditor_token_headers)
+    assert res_auditor.status_code == 403
     
     # Acknowledge
     res = client.patch(f"/api/v1/alerts/{alert_id}/acknowledge", headers=admin_token_headers)
