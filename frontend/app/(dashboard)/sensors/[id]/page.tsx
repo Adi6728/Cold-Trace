@@ -47,7 +47,7 @@ export default function SensorDetailPage({ params }: { params: { id: string } })
   if (error || !sensor) {
     return (
       <main className={dashboardStyles.dashboardContainer} style={{ padding: 32 }}>
-        <div style={{ color: "#dc2626", background: "#fef2f2", padding: 12, borderRadius: 8, border: "1px solid #fecaca" }}>
+        <div style={{ color: "#dc2626", background: "var(--bg-danger)", padding: 12, borderRadius: 8, border: "1px solid #fecaca" }}>
           {error || "Sensor not found."}
         </div>
       </main>
@@ -73,35 +73,35 @@ export default function SensorDetailPage({ params }: { params: { id: string } })
           <h2 className={dashboardStyles.feedTitle}>Sensor Status</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
-              <div style={{ fontSize: "13px", color: "#64748b", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Assignment</div>
+              <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Assignment</div>
               {sensor.shipment_id ? (
                 <Link href={`/shipments/${sensor.shipment_id}`} className={tableStyles.link} style={{ fontSize: "16px", fontWeight: 500 }}>
                   Active on Shipment #{sensor.shipment_id}
                 </Link>
               ) : (
-                <span style={{ fontSize: "16px", color: "#475569" }}>Unassigned</span>
+                <span style={{ fontSize: "16px", color: "var(--text-secondary)" }}>Unassigned</span>
               )}
             </div>
             
             {latestReading ? (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 8 }}>
-                <div style={{ background: "#f8fafc", padding: 16, borderRadius: 8, border: "1px solid #e2e8f0" }}>
-                  <div style={{ fontSize: "13px", color: "#64748b", marginBottom: 4 }}>Latest Temperature</div>
-                  <div style={{ fontSize: "24px", fontWeight: 700, color: "#0f172a" }}>
+                <div style={{ background: "var(--bg-page)", padding: 16, borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                  <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: 4 }}>Latest Temperature</div>
+                  <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)" }}>
                     {latestReading.temperature.toFixed(1)}°C
                   </div>
                 </div>
                 {latestReading.humidity != null && (
-                  <div style={{ background: "#f8fafc", padding: 16, borderRadius: 8, border: "1px solid #e2e8f0" }}>
-                    <div style={{ fontSize: "13px", color: "#64748b", marginBottom: 4 }}>Latest Humidity</div>
-                    <div style={{ fontSize: "24px", fontWeight: 700, color: "#0f172a" }}>
+                  <div style={{ background: "var(--bg-page)", padding: 16, borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                    <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: 4 }}>Latest Humidity</div>
+                    <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)" }}>
                       {latestReading.humidity.toFixed(1)}%
                     </div>
                   </div>
                 )}
               </div>
             ) : (
-              <div style={{ background: "#f8fafc", padding: 16, borderRadius: 8, border: "1px solid #e2e8f0", color: "#64748b" }}>
+              <div style={{ background: "var(--bg-page)", padding: 16, borderRadius: 8, border: "1px solid #e2e8f0", color: "var(--text-secondary)" }}>
                 No telemetry data received yet.
               </div>
             )}
@@ -130,11 +130,11 @@ export default function SensorDetailPage({ params }: { params: { id: string } })
                 [...readings].reverse().map((r) => (
                   <tr key={r.id}>
                     <td>
-                      <div style={{ fontWeight: 500, color: "#334155" }}>{new Date(r.recorded_at).toLocaleDateString()}</div>
-                      <div style={{ fontSize: "12px", color: "#64748b" }}>{new Date(r.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                      <div style={{ fontWeight: 500, color: "var(--text-primary)" }}>{new Date(r.recorded_at).toLocaleDateString()}</div>
+                      <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{new Date(r.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                     </td>
-                    <td style={{ fontWeight: 500, color: "#0f172a" }}>{r.temperature.toFixed(1)}°C</td>
-                    <td style={{ color: "#475569" }}>{r.humidity != null ? `${r.humidity.toFixed(1)}%` : "-"}</td>
+                    <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{r.temperature.toFixed(1)}°C</td>
+                    <td style={{ color: "var(--text-secondary)" }}>{r.humidity != null ? `${r.humidity.toFixed(1)}%` : "-"}</td>
                   </tr>
                 ))
               )}

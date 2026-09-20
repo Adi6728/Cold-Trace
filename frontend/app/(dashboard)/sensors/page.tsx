@@ -40,7 +40,7 @@ export default function SensorsPage() {
   if (error) {
     return (
       <main className={dashboardStyles.dashboardContainer} style={{ padding: 32 }}>
-        <div style={{ color: "#dc2626", background: "#fef2f2", padding: 12, borderRadius: 8, border: "1px solid #fecaca" }}>
+        <div style={{ color: "#dc2626", background: "var(--bg-danger)", padding: 12, borderRadius: 8, border: "1px solid #fecaca" }}>
           {error}
         </div>
       </main>
@@ -75,7 +75,7 @@ export default function SensorsPage() {
                     <Link href={`/sensors/${s.id}`} className={tableStyles.link} style={{ fontWeight: 600 }}>
                       {s.sensor_code}
                     </Link>
-                    <div style={{ fontSize: "12px", color: "#64748b" }}>ID: #{s.id}</div>
+                    <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>ID: #{s.id}</div>
                   </td>
                   <td>
                     {s.shipment_id ? (
@@ -83,13 +83,13 @@ export default function SensorsPage() {
                         Shipment #{s.shipment_id}
                       </Link>
                     ) : (
-                      <span style={{ color: "#94a3b8" }}>Unassigned</span>
+                      <span style={{ color: "var(--text-secondary)" }}>Unassigned</span>
                     )}
                   </td>
                   <td>
                     <Badge status={s.status === 'ACTIVE' ? 'active' : 'default'}>{s.status}</Badge>
                   </td>
-                  <td style={{ color: "#64748b" }}>{new Date(s.created_at).toLocaleDateString()}</td>
+                  <td style={{ color: "var(--text-secondary)" }}>{new Date(s.created_at).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>

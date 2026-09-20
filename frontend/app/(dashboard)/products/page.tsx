@@ -191,10 +191,10 @@ export default function ProductsPage() {
               {products.map((p) => (
                 <tr key={p.id}>
                   <td>
-                    <div style={{ fontWeight: 600, color: "#0f172a" }}>{p.name}</div>
-                    <div style={{ fontSize: "12px", color: "#64748b" }}>ID: #{p.id}</div>
+                    <div style={{ fontWeight: 600, color: "var(--text-primary)" }}>{p.name}</div>
+                    <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>ID: #{p.id}</div>
                   </td>
-                  <td style={{ color: "#475569" }}>{p.description || "-"}</td>
+                  <td style={{ color: "var(--text-secondary)" }}>{p.description || "-"}</td>
                   <td>
                     <Badge status="default">{p.storage_min_temp}°C to {p.storage_max_temp}°C</Badge>
                   </td>
@@ -203,7 +203,7 @@ export default function ProductsPage() {
                       {getBatchCount(p.id)} {getBatchCount(p.id) === 1 ? 'batch' : 'batches'}
                     </Link>
                   </td>
-                  <td style={{ color: "#64748b" }}>{new Date(p.created_at).toLocaleDateString()}</td>
+                  <td style={{ color: "var(--text-secondary)" }}>{new Date(p.created_at).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>

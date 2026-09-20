@@ -142,7 +142,7 @@ export default function BatchesPage() {
                 window.history.pushState({}, '', '/batches');
               }}
               className={formStyles.button} 
-              style={{ background: "#f1f5f9", color: "#475569" }}
+              style={{ background: "var(--border-light)", color: "var(--text-secondary)" }}
             >
               Clear Product Filter
             </button>
@@ -253,14 +253,14 @@ export default function BatchesPage() {
               {displayedBatches.map((b) => (
                 <tr key={b.id}>
                   <td>
-                    <div style={{ fontWeight: 600, color: "#0f172a" }}>{b.batch_number}</div>
-                    <div style={{ fontSize: "12px", color: "#64748b" }}>ID: #{b.id}</div>
+                    <div style={{ fontWeight: 600, color: "var(--text-primary)" }}>{b.batch_number}</div>
+                    <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>ID: #{b.id}</div>
                   </td>
-                  <td style={{ color: "#334155", fontWeight: 500 }}>{getProductName(b.product_id)}</td>
+                  <td style={{ color: "var(--text-primary)", fontWeight: 500 }}>{getProductName(b.product_id)}</td>
                   <td>{b.quantity} units</td>
                   <td>{getStatusBadge(b)}</td>
-                  <td style={{ color: "#64748b" }}>{new Date(b.manufactured_at).toLocaleDateString()}</td>
-                  <td style={{ color: "#64748b" }}>{new Date(b.expiry_date).toLocaleDateString()}</td>
+                  <td style={{ color: "var(--text-secondary)" }}>{new Date(b.manufactured_at).toLocaleDateString()}</td>
+                  <td style={{ color: "var(--text-secondary)" }}>{new Date(b.expiry_date).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>

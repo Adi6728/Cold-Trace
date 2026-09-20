@@ -1,13 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { api, AuthUserResponse } from "@/lib/api";
 import styles from "./Header.module.css";
 
 export default function Header() {
   const router = useRouter();
   const [user, setUser] = useState<AuthUserResponse | null>(null);
+
+
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("token_type");
+    router.replace("/login");
+  }, [router]);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -19,13 +27,7 @@ export default function Header() {
         // Token invalid, logout
         handleLogout();
       });
-  }, []);
-
-  function handleLogout() {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("token_type");
-    router.replace("/login");
-  }
+  }, [handleLogout]);
 
   return (
     <header className={styles.header}>

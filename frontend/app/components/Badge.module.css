@@ -1,31 +1,31 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.025em;
+  letter-spacing: 0.5px;
   white-space: nowrap;
 }
 
 .active {
-  background-color: #dcfce7;
-  color: #166534;
+  background-color: var(--bg-success);
+  color: var(--color-success);
 }
 
 .expired {
-  background-color: #fee2e2;
-  color: #991b1b;
+  background-color: var(--bg-danger);
+  color: var(--color-danger);
 }
 
 .pending {
-  background-color: #fef9c3;
-  color: #854d0e;
+  background-color: var(--bg-warning);
+  color: #974F0C;
 }
 
 .neutral {
-  background-color: #f1f5f9;
-  color: #475569;
+  background-color: var(--bg-neutral);
+  color: var(--text-secondary);
 }

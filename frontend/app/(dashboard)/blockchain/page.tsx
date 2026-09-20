@@ -62,7 +62,7 @@ export default function BlockchainAuditPage() {
         </p>
       </div>
 
-      <div style={{ background: "#eff6ff", color: "#1e40af", padding: "16px 20px", borderRadius: 8, marginBottom: 24, fontSize: "14px", border: "1px solid #bfdbfe" }}>
+      <div style={{ background: "var(--bg-info)", color: "var(--text-primary)", padding: "16px 20px", borderRadius: "var(--radius-md)", marginBottom: 24, fontSize: "14px", border: "1px solid var(--border-light)" }}>
         <strong>Architecture Note:</strong> PostgreSQL remains the primary operational database for real-time visibility. 
         Hyperledger Fabric is used as a secondary, tamper-evident verification layer. Records shown here are cryptographically signed and immutable.
       </div>
@@ -88,7 +88,7 @@ export default function BlockchainAuditPage() {
       </div>
 
       {error && (
-        <div style={{ color: "#dc2626", background: "#fef2f2", padding: 16, borderRadius: 8, border: "1px solid #fecaca", marginBottom: 32 }}>
+        <div style={{ color: "var(--color-danger)", background: "var(--bg-danger)", padding: 16, borderRadius: "var(--radius-sm)", border: "1px solid #FFBDAD", marginBottom: 32 }}>
           {error}
         </div>
       )}
@@ -119,15 +119,15 @@ export default function BlockchainAuditPage() {
                   <tr key={idx}>
                     <td>
                       <span style={{ 
-                        padding: "4px 8px", borderRadius: 4, fontSize: "12px", fontWeight: 600,
-                        background: "#f1f5f9", color: "#334155", border: "1px solid #e2e8f0"
+                        padding: "2px 6px", borderRadius: "var(--radius-sm)", fontSize: "11px", fontWeight: 700, textTransform: "uppercase",
+                        background: "var(--bg-neutral)", color: "var(--text-secondary)", border: "1px solid var(--border-light)"
                       }}>
                         {record.eventType}
                       </span>
                     </td>
-                    <td>{record.location || <span style={{ color: "#94a3b8" }}>-</span>}</td>
+                    <td>{record.location || <span style={{ color: "var(--text-secondary)" }}>-</span>}</td>
                     <td>{record.recordedBy}</td>
-                    <td style={{ color: "#475569" }}>
+                    <td style={{ color: "var(--text-secondary)" }}>
                       {record.timestamp ? new Date(record.timestamp).toLocaleString() : "-"}
                     </td>
                   </tr>

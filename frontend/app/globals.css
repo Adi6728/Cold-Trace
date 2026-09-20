@@ -1,16 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Surface & Background Colors */
+  --bg-page: #F4EBE1;      /* Cream background */
+  --bg-surface: #FFFFFF;   /* Pure white for cards/panels */
+  --bg-sunken: #E7DFCF;    /* Darker cream for nested areas */
+  --bg-nav: #111111;       /* Black for sidebar/header */
+  --bg-nav-hover: #222222; /* Lighter black for hover states */
+
+  /* Border Colors */
+  --border-light: rgba(17, 17, 17, 0.1); /* Subtle black borders */
+  --border-strong: #111111; /* Hard borders */
+
+  /* Typography Colors */
+  --text-primary: #111111; /* Stark black */
+  --text-secondary: #555555; /* Neutral grey */
+  --text-nav: #FFFFFF;     /* White text on dark nav background */
+  
+  /* Primary Action Colors */
+  --color-primary: #111111;
+  --color-primary-hover: #333333;
+  --color-primary-active: #000000;
+
+  /* Functional Status Colors (Restrained) */
+  --color-success: #166534;
+  --bg-success: #dcfce7;
+  --color-warning: #9a3412;
+  --bg-warning: #ffedd5;
+  --color-danger: #991b1b;
+  --bg-danger: #fee2e2;
+  --color-info: #1e40af;
+  --bg-info: #dbeafe;
+  --color-neutral: #555555;
+  --bg-neutral: #e5e5e5;
+
+  /* Layout */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 12px;
+  /* Removed soft box-shadows, using sharp borders instead */
+  --shadow-sm: none;
+  --shadow-md: none;
+}
+
 html, body {
   margin: 0;
   padding: 0;
   min-height: 100%;
-  font-family: Arial, Helvetica, sans-serif;
-  background: #f5f7fb;
-  color: #111827;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-* { box-sizing: border-box; }
+* { 
+  box-sizing: border-box; 
+}
 
-a { color: inherit; text-decoration: none; }
+a { 
+  color: var(--color-primary); 
+  text-decoration: none; 
+}
 
-button, input {
+a:hover {
+  text-decoration: underline;
+}
+
+button, input, select, textarea {
   font: inherit;
+  color: inherit;
+}
+
+/* Scrollbar styling for a cleaner look */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
 }

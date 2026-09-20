@@ -183,7 +183,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
   if (error || !shipment) {
     return (
       <main style={{ padding: 32 }}>
-        <div style={{ background: "#fee2e2", color: "#991b1b", padding: 16, borderRadius: 8 }}>
+        <div style={{ background: "var(--bg-danger)", color: "var(--color-danger)", padding: 16, borderRadius: 8 }}>
           {error || "Shipment not found."}
         </div>
       </main>
@@ -196,35 +196,35 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
   const showControls = canCreateEvent || canCreateCustody;
 
   return (
-    <main style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 32px", display: "flex", flexDirection: "column", gap: 24, background: "#f8fafc", minHeight: "100vh" }}>
+    <main style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 32px", display: "flex", flexDirection: "column", gap: 24, background: "var(--bg-page)", minHeight: "100vh" }}>
       
       {/* Header Section */}
       <header style={{ 
         display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16,
-        background: "#fff", padding: 24, borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
+        background: "var(--bg-surface)", padding: 24, borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "var(--shadow-sm)"
       }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
             Shipment Record
           </div>
-          <h1 style={{ margin: 0, display: "flex", alignItems: "center", gap: 12, fontSize: 28, color: "#0f172a" }}>
+          <h1 style={{ margin: 0, display: "flex", alignItems: "center", gap: 12, fontSize: 28, color: "var(--text-primary)" }}>
             #{shipment.id}
             <Badge status={shipment.status === "DELIVERED" ? "success" : shipment.status === "IN_TRANSIT" ? "warning" : "default"}>
               {shipment.status}
             </Badge>
           </h1>
-          <p style={{ color: "#475569", margin: "8px 0 0 0", fontSize: 15, display: "flex", alignItems: "center", gap: 8 }}>
+          <p style={{ color: "var(--text-secondary)", margin: "8px 0 0 0", fontSize: 15, display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontWeight: 500 }}>Org {shipment.origin_organization_id}</span>
-            <span style={{ color: "#94a3b8" }}>&rarr;</span>
+            <span style={{ color: "var(--text-secondary)" }}>&rarr;</span>
             <span style={{ fontWeight: 500 }}>Org {shipment.destination_organization_id}</span>
           </p>
         </div>
         <div style={{ textAlign: "right", display: "flex", flexDirection: "column", gap: 4 }}>
-          <div style={{ fontSize: 13, color: "#64748b" }}>
-            <span style={{ fontWeight: 500, color: "#334155" }}>Started:</span> {shipment.started_at ? new Date(shipment.started_at).toLocaleString(undefined, {dateStyle: 'medium', timeStyle: 'short'}) : "Pending"}
+          <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+            <span style={{ fontWeight: 500, color: "var(--text-primary)" }}>Started:</span> {shipment.started_at ? new Date(shipment.started_at).toLocaleString(undefined, {dateStyle: 'medium', timeStyle: 'short'}) : "Pending"}
           </div>
-          <div style={{ fontSize: 13, color: "#64748b" }}>
-            <span style={{ fontWeight: 500, color: "#334155" }}>Expected:</span> {shipment.expected_delivery_at ? new Date(shipment.expected_delivery_at).toLocaleString(undefined, {dateStyle: 'medium', timeStyle: 'short'}) : "N/A"}
+          <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+            <span style={{ fontWeight: 500, color: "var(--text-primary)" }}>Expected:</span> {shipment.expected_delivery_at ? new Date(shipment.expected_delivery_at).toLocaleString(undefined, {dateStyle: 'medium', timeStyle: 'short'}) : "N/A"}
           </div>
         </div>
       </header>
@@ -235,43 +235,43 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
         <div style={{ flex: "1 1 60%", display: "flex", flexDirection: "column", gap: 24 }}>
           
           {/* Product / Batch Summary */}
-          <section style={{ background: "#fff", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <h2 style={{ margin: "0 0 20px 0", fontSize: 16, color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Batch & Product Info</h2>
+          <section style={{ background: "var(--bg-surface)", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "var(--shadow-sm)" }}>
+            <h2 style={{ margin: "0 0 20px 0", fontSize: 16, color: "var(--text-primary)", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Batch & Product Info</h2>
             {!batch || !product ? (
-               <p style={{ color: "#64748b", fontSize: 14 }}>No batch/product information available.</p>
+               <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>No batch/product information available.</p>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 20 }}>
                 <div>
-                  <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Product Name</div>
-                  <div style={{ fontWeight: 500, color: "#1e293b", fontSize: 15 }}>{product.name}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Product Name</div>
+                  <div style={{ fontWeight: 500, color: "var(--text-primary)", fontSize: 15 }}>{product.name}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Batch Number</div>
-                  <div style={{ fontWeight: 500, color: "#1e293b", fontSize: 15, fontFamily: "monospace" }}>{batch.batch_number}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Batch Number</div>
+                  <div style={{ fontWeight: 500, color: "var(--text-primary)", fontSize: 15, fontFamily: "monospace" }}>{batch.batch_number}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Quantity</div>
-                  <div style={{ fontWeight: 500, color: "#1e293b", fontSize: 15 }}>{batch.quantity} units</div>
+                  <div style={{ fontSize: 11, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Quantity</div>
+                  <div style={{ fontWeight: 500, color: "var(--text-primary)", fontSize: 15 }}>{batch.quantity} units</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Storage Temp</div>
-                  <div style={{ fontWeight: 500, color: "#1e293b", fontSize: 15 }}>{product.storage_min_temp}°C to {product.storage_max_temp}°C</div>
+                  <div style={{ fontSize: 11, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Storage Temp</div>
+                  <div style={{ fontWeight: 500, color: "var(--text-primary)", fontSize: 15 }}>{product.storage_min_temp}°C to {product.storage_max_temp}°C</div>
                 </div>
               </div>
             )}
           </section>
 
           {/* Telemetry Section */}
-          <section style={{ background: "#fff", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+          <section style={{ background: "var(--bg-surface)", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "var(--shadow-sm)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>
-              <h2 style={{ margin: 0, fontSize: 16, color: "#0f172a" }}>Sensor Telemetry</h2>
+              <h2 style={{ margin: 0, fontSize: 16, color: "var(--text-primary)" }}>Sensor Telemetry</h2>
               {sensor && <Badge status={sensor.status === "ACTIVE" ? "success" : "default"}>{sensor.sensor_code}</Badge>}
             </div>
             
             {!sensor ? (
-               <p style={{ color: "#64748b", fontSize: 14 }}>No sensor linked to this shipment.</p>
+               <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>No sensor linked to this shipment.</p>
             ) : readings.length === 0 ? (
-               <p style={{ color: "#64748b", fontSize: 14 }}>No readings available from this sensor.</p>
+               <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>No readings available from this sensor.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
                 {/* Telemetry Summary Cards */}
@@ -281,30 +281,30 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
                     const isNormal = product ? (latest.temperature >= product.storage_min_temp && latest.temperature <= product.storage_max_temp) : true;
                     return (
                       <>
-                        <div style={{ padding: 20, background: isNormal ? "#f0fdf4" : "#fef2f2", border: `1px solid ${isNormal ? '#bbf7d0' : '#fecaca'}`, borderRadius: 12 }}>
-                          <div style={{ fontSize: 12, color: isNormal ? "#166534" : "#991b1b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</div>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: isNormal ? "#15803d" : "#b91c1c", marginTop: 4 }}>
+                        <div style={{ padding: 20, background: isNormal ? "var(--bg-success)" : "var(--bg-danger)", border: `1px solid ${isNormal ? '#ABF5D1' : '#FFBDAD'}`, borderRadius: 12 }}>
+                          <div style={{ fontSize: 12, color: isNormal ? "var(--color-success)" : "var(--color-danger)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, color: isNormal ? "var(--color-success)" : "var(--color-danger)", marginTop: 4 }}>
                              {isNormal ? "NORMAL" : "OUT OF RANGE"}
                           </div>
                         </div>
-                        <div style={{ padding: 20, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12 }}>
-                          <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Latest Temp</div>
-                          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: isNormal ? "#0f172a" : "#b91c1c" }}>
+                        <div style={{ padding: 20, background: "var(--bg-page)", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+                          <div style={{ fontSize: 12, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Latest Temp</div>
+                          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: isNormal ? "var(--text-primary)" : "var(--color-danger)" }}>
                              {latest.temperature.toFixed(1)}°C
                           </div>
                         </div>
-                        <div style={{ padding: 20, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12 }}>
-                          <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Latest Humidity</div>
-                          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: "#0f172a" }}>
+                        <div style={{ padding: 20, background: "var(--bg-page)", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+                          <div style={{ fontSize: 12, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Latest Humidity</div>
+                          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: "var(--text-primary)" }}>
                              {latest.humidity != null ? `${latest.humidity.toFixed(1)}%` : "-"}
                           </div>
                         </div>
-                        <div style={{ padding: 20, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12 }}>
-                          <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Last Updated</div>
-                          <div style={{ fontSize: 14, fontWeight: 500, marginTop: 8, color: "#334155" }}>
+                        <div style={{ padding: 20, background: "var(--bg-page)", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+                          <div style={{ fontSize: 12, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Last Updated</div>
+                          <div style={{ fontSize: 14, fontWeight: 500, marginTop: 8, color: "var(--text-primary)" }}>
                              {new Date(latest.recorded_at).toLocaleTimeString(undefined, {hour: '2-digit', minute:'2-digit', second:'2-digit'})}
                           </div>
-                          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
+                          <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2 }}>
                              {new Date(latest.recorded_at).toLocaleDateString()}
                           </div>
                         </div>
@@ -315,7 +315,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
 
                 {/* Chart */}
                 <div>
-                  <h3 style={{ fontSize: 14, color: "#475569", marginBottom: 16, marginTop: 0 }}>Temperature History</h3>
+                  <h3 style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 16, marginTop: 0 }}>Temperature History</h3>
                   <div style={{ height: 300 }}>
                     <TelemetryChart readings={readings} product={product} />
                   </div>
@@ -325,9 +325,9 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
           </section>
 
           {/* Alerts Section */}
-          <section style={{ background: "#fff", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <h2 style={{ margin: "0 0 20px 0", fontSize: 16, color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Active & Past Alerts</h2>
-            {alerts.length === 0 ? <p style={{ color: "#64748b", fontSize: 14 }}>No active alerts.</p> : (
+          <section style={{ background: "var(--bg-surface)", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "var(--shadow-sm)" }}>
+            <h2 style={{ margin: "0 0 20px 0", fontSize: 16, color: "var(--text-primary)", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Active & Past Alerts</h2>
+            {alerts.length === 0 ? <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>No active alerts.</p> : (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {alerts.slice().sort((a, b) => new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime()).map(al => {
                   const isResolved = al.status === "RESOLVED";
@@ -336,37 +336,37 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
 
                   return (
                   <div key={al.id} style={{ 
-                    background: isResolved ? '#f8fafc' : al.severity === 'CRITICAL' ? '#fef2f2' : al.severity === 'HIGH' ? '#fff7ed' : '#fefce8',
+                    background: isResolved ? 'var(--bg-page)' : al.severity === 'CRITICAL' ? 'var(--bg-danger)' : al.severity === 'HIGH' ? '#fff7ed' : '#fefce8',
                     padding: 16, borderRadius: 12, 
-                    border: `1px solid ${isResolved ? '#e2e8f0' : al.severity === 'CRITICAL' ? '#fecaca' : al.severity === 'HIGH' ? '#fed7aa' : '#fef08a'}`
+                    border: `1px solid ${isResolved ? 'var(--border-strong)' : al.severity === 'CRITICAL' ? '#FFBDAD' : al.severity === 'HIGH' ? '#fed7aa' : '#fef08a'}`
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: "flex-start", marginBottom: 12 }}>
                       <div>
-                        <div style={{ fontWeight: 600, fontSize: 15, color: isResolved ? '#64748b' : al.severity === 'CRITICAL' ? '#991b1b' : al.severity === 'HIGH' ? '#9a3412' : '#854d0e' }}>
+                        <div style={{ fontWeight: 600, fontSize: 15, color: isResolved ? 'var(--text-secondary)' : al.severity === 'CRITICAL' ? 'var(--color-danger)' : al.severity === 'HIGH' ? '#9a3412' : '#854d0e' }}>
                           {al.severity} Severity Alert
                         </div>
-                        <div style={{ fontSize: 13, color: isResolved ? "#94a3b8" : "#b91c1c", marginTop: 4 }}>
+                        <div style={{ fontSize: 13, color: isResolved ? "var(--text-secondary)" : "var(--color-danger)", marginTop: 4 }}>
                           Detected: {new Date(al.detected_at).toLocaleString()}
                         </div>
                       </div>
                       <Badge status={isOpen ? 'error' : isAcknowledged ? 'warning' : 'default'}>{al.status}</Badge>
                     </div>
                     
-                    <div style={{ fontSize: 14, color: "#334155", background: "rgba(255,255,255,0.5)", padding: 12, borderRadius: 8 }}>
+                    <div style={{ fontSize: 14, color: "var(--text-primary)", background: "rgba(255,255,255,0.5)", padding: 12, borderRadius: 8 }}>
                       <div style={{ display: "flex", gap: 16, marginBottom: 8 }}>
-                        <div><span style={{ color: "#64748b" }}>Sensor:</span> {al.sensor_id}</div>
-                        <div><span style={{ color: "#64748b" }}>Latest Temp:</span> <strong>{al.latest_temperature}°C</strong></div>
+                        <div><span style={{ color: "var(--text-secondary)" }}>Sensor:</span> {al.sensor_id}</div>
+                        <div><span style={{ color: "var(--text-secondary)" }}>Latest Temp:</span> <strong>{al.latest_temperature}°C</strong></div>
                       </div>
                       {product && (
-                        <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}>
+                        <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 8 }}>
                           Allowed Range: {product.storage_min_temp}°C to {product.storage_max_temp}°C
                         </div>
                       )}
-                      {al.message && <div style={{ color: "#0f172a" }}>{al.message}</div>}
+                      {al.message && <div style={{ color: "var(--text-primary)" }}>{al.message}</div>}
                     </div>
                     
                     {(al.acknowledged_at || al.resolved_at) && (
-                      <div style={{ fontSize: 12, marginTop: 12, color: "#64748b", display: "flex", gap: 16 }}>
+                      <div style={{ fontSize: 12, marginTop: 12, color: "var(--text-secondary)", display: "flex", gap: 16 }}>
                         {al.acknowledged_at && <div>Ack: {new Date(al.acknowledged_at).toLocaleString()}</div>}
                         {al.resolved_at && <div>Res: {new Date(al.resolved_at).toLocaleString()}</div>}
                       </div>
@@ -378,7 +378,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
                           <button 
                             onClick={() => handleAcknowledgeAlert(al.id)}
                             className={formStyles.button}
-                            style={{ padding: "8px 16px", background: "#fff", border: "1px solid #cbd5e1", color: "#334155", width: "auto" }}
+                            style={{ padding: "8px 16px", background: "var(--bg-surface)", border: "1px solid #cbd5e1", color: "var(--text-primary)", width: "auto" }}
                           >
                             Acknowledge
                           </button>
@@ -399,45 +399,45 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
           </section>
 
           {/* Blockchain Verification Section */}
-          <section style={{ background: "#fff", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+          <section style={{ background: "var(--bg-surface)", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "var(--shadow-sm)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>
-              <h2 style={{ margin: 0, fontSize: 16, color: "#0f172a", display: "flex", alignItems: "center", gap: 8 }}>
+              <h2 style={{ margin: 0, fontSize: 16, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 8 }}>
                 🔗 Blockchain Verification
               </h2>
               <Badge status={blockchainHistory ? "success" : blockchainError ? "error" : "default"}>
                 {blockchainHistory ? "VERIFIED" : blockchainError ? "UNAVAILABLE" : "LOADING"}
               </Badge>
             </div>
-            <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 20 }}>
               Immutable records fetched directly from the Hyperledger Fabric ledger to audit operational events. This is independent of operational data.
             </p>
 
             {blockchainError ? (
-               <div style={{ background: "#fef2f2", color: "#991b1b", padding: 12, borderRadius: 8, fontSize: 14, border: "1px solid #fecaca" }}>
+               <div style={{ background: "var(--bg-danger)", color: "var(--color-danger)", padding: 12, borderRadius: 8, fontSize: 14, border: "1px solid #fecaca" }}>
                  {blockchainError}
                </div>
             ) : !blockchainHistory ? (
-               <div style={{ color: "#64748b", fontSize: 14, fontStyle: "italic" }}>Loading ledger data...</div>
+               <div style={{ color: "var(--text-secondary)", fontSize: 14, fontStyle: "italic" }}>Loading ledger data...</div>
             ) : blockchainHistory.length === 0 ? (
-               <div style={{ color: "#64748b", fontSize: 14 }}>No blockchain records found for this shipment.</div>
+               <div style={{ color: "var(--text-secondary)", fontSize: 14 }}>No blockchain records found for this shipment.</div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {blockchainHistory.map((rec, idx) => (
-                  <div key={idx} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 8 }}>
+                  <div key={idx} style={{ background: "var(--bg-page)", border: "1px solid #e2e8f0", padding: 16, borderRadius: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <div style={{ fontWeight: 600, color: "#0f172a", fontSize: 14 }}>{rec.eventType}</div>
-                      <div style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace", background: "#e2e8f0", padding: "2px 6px", borderRadius: 4 }}>ID: {rec.eventId}</div>
+                      <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>{rec.eventType}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)", fontFamily: "monospace", background: "var(--border-strong)", padding: "2px 6px", borderRadius: 4 }}>ID: {rec.eventId}</div>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, fontSize: 13, color: "#475569" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, fontSize: 13, color: "var(--text-secondary)" }}>
                       <div>
-                        <span style={{ color: "#94a3b8" }}>Location:</span> <br/> {rec.location || "N/A"}
+                        <span style={{ color: "var(--text-secondary)" }}>Location:</span> <br/> {rec.location || "N/A"}
                       </div>
                       <div>
-                        <span style={{ color: "#94a3b8" }}>Recorded At:</span> <br/> {new Date(rec.timestamp).toLocaleString()}
+                        <span style={{ color: "var(--text-secondary)" }}>Recorded At:</span> <br/> {new Date(rec.timestamp).toLocaleString()}
                       </div>
                       {rec.recordedBy && (
                         <div style={{ gridColumn: "1 / -1" }}>
-                          <span style={{ color: "#94a3b8" }}>Recorded By:</span> <br/> {rec.recordedBy}
+                          <span style={{ color: "var(--text-secondary)" }}>Recorded By:</span> <br/> {rec.recordedBy}
                         </div>
                       )}
                     </div>
@@ -454,13 +454,13 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
           
           {/* Action Controls (Role Aware) */}
           {showControls ? (
-            <section style={{ background: "#fff", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-              <h2 style={{ margin: "0 0 20px 0", fontSize: 16, color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Operational Controls</h2>
+            <section style={{ background: "var(--bg-surface)", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "var(--shadow-sm)" }}>
+              <h2 style={{ margin: "0 0 20px 0", fontSize: 16, color: "var(--text-primary)", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Operational Controls</h2>
               
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
                 {canCreateEvent && (
                   <div>
-                    <h3 style={{ marginTop: 0, fontSize: 14, color: "#334155", marginBottom: 12 }}>Record New Event</h3>
+                    <h3 style={{ marginTop: 0, fontSize: 14, color: "var(--text-primary)", marginBottom: 12 }}>Record New Event</h3>
                     <form onSubmit={handleCreateEvent} className={formStyles.form} style={{ gap: 12 }}>
                       {eventError && <div className={formStyles.error}>{eventError}</div>}
                       <select value={eventType} onChange={e => setEventType(e.target.value)} className={formStyles.input}>
@@ -480,7 +480,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
                 
                 {canCreateCustody && (
                   <div>
-                    <h3 style={{ marginTop: 0, fontSize: 14, color: "#334155", marginBottom: 12 }}>Transfer Custody</h3>
+                    <h3 style={{ marginTop: 0, fontSize: 14, color: "var(--text-primary)", marginBottom: 12 }}>Transfer Custody</h3>
                     <form onSubmit={handleCreateCustody} className={formStyles.form} style={{ gap: 12 }}>
                       {custodyError && <div className={formStyles.error}>{custodyError}</div>}
                       <input required type="number" min="1" placeholder="To Org ID" value={toOrgId} onChange={e => setToOrgId(e.target.value === "" ? "" : Number(e.target.value))} className={formStyles.input} />
@@ -492,21 +492,21 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
               </div>
             </section>
           ) : (
-            <section style={{ background: "#f8fafc", borderRadius: 12, padding: 24, display: "flex", alignItems: "center", justifyContent: "center", border: "1px dashed #cbd5e1" }}>
-              <p style={{ color: "#64748b", fontSize: 14, textAlign: "center" }}>You have read-only (Auditor) access to this shipment. Controls disabled.</p>
+            <section style={{ background: "var(--bg-page)", borderRadius: 12, padding: 24, display: "flex", alignItems: "center", justifyContent: "center", border: "1px dashed #cbd5e1" }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 14, textAlign: "center" }}>You have read-only (Auditor) access to this shipment. Controls disabled.</p>
             </section>
           )}
 
           {/* Shipment Journey Timeline */}
-          <section style={{ background: "#fff", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <h2 style={{ margin: "0 0 20px 0", fontSize: 16, color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Journey Timeline</h2>
+          <section style={{ background: "var(--bg-surface)", borderRadius: 12, padding: 24, border: "1px solid #e2e8f0", boxShadow: "var(--shadow-sm)" }}>
+            <h2 style={{ margin: "0 0 20px 0", fontSize: 16, color: "var(--text-primary)", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Journey Timeline</h2>
             
             {events.length === 0 && custodyTransfers.length === 0 ? (
-              <p style={{ color: "#64748b", fontSize: 14 }}>No journey activity recorded yet.</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>No journey activity recorded yet.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 0, position: "relative", marginTop: 8 }}>
                 {/* Vertical Line */}
-                <div style={{ position: "absolute", left: 15, top: 16, bottom: 20, width: 2, background: "#e2e8f0" }} />
+                <div style={{ position: "absolute", left: 15, top: 16, bottom: 20, width: 2, background: "var(--border-strong)" }} />
                 
                 {[
                   ...events.map(ev => ({ type: 'EVENT' as const, date: new Date(ev.occurred_at), data: ev })),
@@ -533,18 +533,18 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
                       {item.type === 'EVENT' ? (
                         <>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                            <div style={{ fontWeight: 600, color: "#0f172a", fontSize: 14 }}>{(item.data as ShipmentEvent).event_type}</div>
-                            <div style={{ fontSize: 12, color: "#64748b", textAlign: "right" }}>
+                            <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>{(item.data as ShipmentEvent).event_type}</div>
+                            <div style={{ fontSize: 12, color: "var(--text-secondary)", textAlign: "right" }}>
                               {item.date.toLocaleDateString()}<br/>{item.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                             </div>
                           </div>
                           {(item.data as ShipmentEvent).location && (
-                            <div style={{ fontSize: 13, color: "#334155", display: "flex", alignItems: "center", gap: 4 }}>
-                              <span style={{ color: "#94a3b8" }}>📍</span> {(item.data as ShipmentEvent).location}
+                            <div style={{ fontSize: 13, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 4 }}>
+                              <span style={{ color: "var(--text-secondary)" }}>📍</span> {(item.data as ShipmentEvent).location}
                             </div>
                           )}
                           {(item.data as ShipmentEvent).description && (
-                            <div style={{ fontSize: 13, color: "#475569", marginTop: 8, padding: 8, background: "rgba(255,255,255,0.6)", borderRadius: 6 }}>
+                            <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 8, padding: 8, background: "rgba(255,255,255,0.6)", borderRadius: 6 }}>
                               {(item.data as ShipmentEvent).description}
                             </div>
                           )}
@@ -553,7 +553,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
                         <>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                             <div style={{ fontWeight: 600, color: "#5b21b6", fontSize: 14 }}>Custody Transfer</div>
-                            <div style={{ fontSize: 12, color: "#64748b", textAlign: "right" }}>
+                            <div style={{ fontSize: 12, color: "var(--text-secondary)", textAlign: "right" }}>
                               {item.date.toLocaleDateString()}<br/>{item.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                             </div>
                           </div>
@@ -563,8 +563,8 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
                             <span style={{ fontWeight: 500 }}>Org {(item.data as CustodyTransfer).to_organization_id}</span>
                           </div>
                           {(item.data as CustodyTransfer).notes && (
-                            <div style={{ fontSize: 13, color: "#475569", marginTop: 8 }}>
-                              <span style={{ color: "#94a3b8" }}>Notes:</span> {(item.data as CustodyTransfer).notes}
+                            <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 8 }}>
+                              <span style={{ color: "var(--text-secondary)" }}>Notes:</span> {(item.data as CustodyTransfer).notes}
                             </div>
                           )}
                         </>

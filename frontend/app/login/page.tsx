@@ -30,36 +30,43 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
-      <div style={{ width: "100%", maxWidth: 420, background: "#fff", borderRadius: 12, padding: 32, boxShadow: "0 12px 30px rgba(15, 23, 42, 0.08)" }}>
-        <h1 style={{ marginTop: 0, marginBottom: 8 }}>ColdChain Trace</h1>
-        <p style={{ marginTop: 0, marginBottom: 24, color: "#4b5563" }}>Sign in to continue</p>
+    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24, background: "var(--bg-page)" }}>
+      <div style={{ width: "100%", maxWidth: 420, background: "var(--bg-surface)", borderRadius: "var(--radius-md)", padding: 40, boxShadow: "var(--shadow-md)", border: "1px solid var(--border-light)" }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+          <div style={{ width: 40, height: 40, background: "var(--color-primary)", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "bold", fontSize: 20 }}>
+            C
+          </div>
+        </div>
+        <h1 style={{ marginTop: 0, marginBottom: 8, fontSize: 24, textAlign: "center", color: "var(--text-primary)" }}>Log in to ColdChain</h1>
+        <p style={{ marginTop: 0, marginBottom: 32, color: "var(--text-secondary)", textAlign: "center", fontSize: 14 }}>Enter your credentials to continue</p>
 
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: 16 }}>
-          <label style={{ display: "grid", gap: 8 }}>
-            <span>Email</span>
+        <form onSubmit={handleSubmit} style={{ display: "grid", gap: 20 }}>
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>Email</span>
             <input
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
-              style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db" }}
+              style={{ padding: "10px 12px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-strong)", background: "var(--bg-surface)", color: "var(--text-primary)" }}
             />
           </label>
 
-          <label style={{ display: "grid", gap: 8 }}>
-            <span>Password</span>
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>Password</span>
             <input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
-              style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db" }}
+              style={{ padding: "10px 12px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-strong)", background: "var(--bg-surface)", color: "var(--text-primary)" }}
             />
           </label>
 
           {error ? (
-            <div style={{ background: "#fef2f2", color: "#991b1b", padding: 10, borderRadius: 8 }}>{error}</div>
+            <div style={{ background: "var(--bg-danger)", color: "var(--color-danger)", padding: 12, borderRadius: "var(--radius-sm)", fontSize: 14 }}>
+              {error}
+            </div>
           ) : null}
 
           <button
@@ -68,13 +75,16 @@ export default function LoginPage() {
             style={{
               padding: "12px 16px",
               border: 0,
-              borderRadius: 8,
-              background: loading ? "#94a3b8" : "#111827",
-              color: "#fff",
+              borderRadius: "var(--radius-sm)",
+              background: loading ? "var(--bg-neutral)" : "var(--color-primary)",
+              color: loading ? "var(--text-secondary)" : "white",
+              fontWeight: 600,
               cursor: loading ? "not-allowed" : "pointer",
+              transition: "background 0.2s ease",
+              marginTop: 8
             }}
           >
-            {loading ? "Signing in..." : "Log in"}
+            {loading ? "Authenticating..." : "Log in"}
           </button>
         </form>
       </div>

@@ -71,7 +71,7 @@ export default function ShipmentsPage() {
   }
 
   if (error) {
-    return <main style={{ padding: 32, color: "#991b1b" }}>{error}</main>;
+    return <main style={{ padding: 32, color: "var(--color-danger)" }}>{error}</main>;
   }
 
   return (
@@ -82,10 +82,10 @@ export default function ShipmentsPage() {
         <h1 style={{ margin: 0 }}>Shipments</h1>
       </div>
 
-      <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 12px 30px rgba(15, 23, 42, 0.08)", marginBottom: 32 }}>
+      <section style={{ background: "var(--bg-surface)", borderRadius: 12, padding: 24, boxShadow: "0 12px 30px rgba(15, 23, 42, 0.08)", marginBottom: 32 }}>
         <h2 style={{ marginTop: 0 }}>Create Shipment</h2>
         <form onSubmit={handleCreateShipment} style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 400 }}>
-          {formError && <div style={{ color: "#991b1b", fontSize: 14 }}>{formError}</div>}
+          {formError && <div style={{ color: "var(--color-danger)", fontSize: 14 }}>{formError}</div>}
           
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <label>Batch</label>
@@ -102,13 +102,13 @@ export default function ShipmentsPage() {
             <input required type="number" min="1" value={destOrgId} onChange={(e) => setDestOrgId(e.target.value === "" ? "" : Number(e.target.value))} style={{ padding: 8, borderRadius: 6, border: "1px solid #d1d5db" }} />
           </div>
 
-          <button type="submit" style={{ padding: "10px 14px", borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer", fontWeight: "bold" }}>
+          <button type="submit" style={{ padding: "10px 14px", borderRadius: 8, border: "none", background: "#2563eb", color: "var(--bg-surface)", cursor: "pointer", fontWeight: "bold" }}>
             Create Shipment
           </button>
         </form>
       </section>
 
-      <section style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 12px 30px rgba(15, 23, 42, 0.08)" }}>
+      <section style={{ background: "var(--bg-surface)", borderRadius: 12, padding: 24, boxShadow: "0 12px 30px rgba(15, 23, 42, 0.08)" }}>
         <h2 style={{ marginTop: 0 }}>Shipment List</h2>
         {shipments.length === 0 ? (
           <p>No shipments found.</p>

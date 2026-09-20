@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { api, Alert, AuthUserResponse } from "@/lib/api";
 import { canPerformAction } from "@/lib/rbac";
@@ -19,11 +19,8 @@ export default function AlertsPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
-  useEffect(() => {
-    fetchAlerts();
-  }, [router]);
 
-  async function fetchAlerts() {
+  const fetchAlerts = useCallback(async () => {
     const token = localStorage.getItem("access_token");
     if (!token) {
       router.replace("/login");
@@ -54,7 +51,11 @@ export default function AlertsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [router]);
+
+  useEffect(() => {
+    fetchAlerts();
+  }, [fetchAlerts]);
 
   async function handleAcknowledge(alertId: number) {
     const token = localStorage.getItem("access_token");
@@ -91,7 +92,7 @@ export default function AlertsPage() {
   if (error) {
     return (
       <main className={dashboardStyles.dashboardContainer} style={{ padding: 32 }}>
-        <div style={{ color: "#dc2626", background: "#fef2f2", padding: 12, borderRadius: 8, border: "1px solid #fecaca" }}>
+        <div style={{ color: "#dc2626", background: "var(--bg-danger)", padding: 12, borderRadius: 8, border: "1px solid #fecaca" }}>
           {error}
         </div>
       </main>
@@ -151,7 +152,7 @@ export default function AlertsPage() {
               {alerts.map((a) => {
                 const isCritical = a.severity === 'CRITICAL';
                 const isHigh = a.severity === 'HIGH';
-                const severityStyle = isCritical ? { color: "#dc2626", background: "#fef2f2" } : isHigh ? { color: "#ea580c", background: "#fff7ed" } : { color: "#d97706", background: "#fefce8" };
+                const severityStyle = isCritical ? { color: "#dc2626", background: "var(--bg-danger)" } : isHigh ? { color: "#ea580c", background: "#fff7ed" } : { color: "#d97706", background: "#fefce8" };
                 
                 let badgeStatus: "error" | "warning" | "default" | "success" = "default";
                 if (a.status === 'OPEN') badgeStatus = "error";
@@ -170,21 +171,21 @@ export default function AlertsPage() {
                     </td>
                     <td><Badge status={badgeStatus}>{a.status}</Badge></td>
                     <td>
-                      <div style={{ fontWeight: 600, color: "#0f172a" }}>
+                      <div style={{ fontWeight: 600, color: "var(--text-primary)" }}>
                         <Link href={`/shipments/${a.shipment_id}`} className={tableStyles.link}>
                           Shipment #{a.shipment_id}
                         </Link>
                       </div>
-                      <div style={{ fontSize: "12px", color: "#64748b" }}>
+                      <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
                         Sensor: <Link href={`/sensors/${a.sensor_id}`} className={tableStyles.link}>#{a.sensor_id}</Link>
                       </div>
                     </td>
                     <td>
-                      <span style={{ fontWeight: 600, color: "#0f172a" }}>{a.latest_temperature.toFixed(1)}°C</span>
+                      <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{a.latest_temperature.toFixed(1)}°C</span>
                     </td>
                     <td>
-                      <div style={{ fontWeight: 500, color: "#334155" }}>{new Date(a.detected_at).toLocaleDateString()}</div>
-                      <div style={{ fontSize: "12px", color: "#64748b" }}>{new Date(a.detected_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                      <div style={{ fontWeight: 500, color: "var(--text-primary)" }}>{new Date(a.detected_at).toLocaleDateString()}</div>
+                      <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{new Date(a.detected_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                     </td>
                     <td>
                       <div style={{ display: "flex", gap: 8 }}>
@@ -213,7 +214,7 @@ export default function AlertsPage() {
                           </>
                         )}
                         {!canPerformAction(user?.role, "MUTATE_SHIPMENT") && (a.status !== 'RESOLVED') && (
-                          <span style={{ fontSize: "12px", color: "#94a3b8", fontStyle: "italic" }}>Read Only</span>
+                          <span style={{ fontSize: "12px", color: "var(--text-secondary)", fontStyle: "italic" }}>Read Only</span>
                         )}
                       </div>
                     </td>

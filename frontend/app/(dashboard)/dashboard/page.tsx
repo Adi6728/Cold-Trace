@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api, Shipment, ShipmentEvent, Alert } from "@/lib/api";
-import DashboardCard from "../../components/DashboardCard";
-import Badge from "../../components/Badge";
+import { api, Shipment, ShipmentEvent, Alert, AuthUserResponse } from "@/lib/api";
 import styles from "../../components/Dashboard.module.css";
 
 interface DashboardData {
+  user: AuthUserResponse | null;
   totalProducts: number;
   totalBatches: number;
   activeShipments: number;
@@ -31,7 +30,8 @@ export default function DashboardPage() {
 
     async function fetchDashboard(validToken: string) {
       try {
-        const [products, batches, shipments, sensors] = await Promise.all([
+        const [user, products, batches, shipments, sensors] = await Promise.all([
+          api.me(validToken).catch(() => null),
           api.getProducts(validToken).catch(() => []),
           api.getBatches(validToken).catch(() => []),
           api.getShipments(validToken).catch(() => []),
@@ -67,6 +67,7 @@ export default function DashboardPage() {
         const openAlertsCount = allAlerts.filter(a => a.status === 'OPEN').length;
 
         setData({
+          user,
           totalProducts: products.length,
           totalBatches: batches.length,
           activeShipments: activeShipments.length,
@@ -88,7 +89,7 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className={styles.dashboardContainer}>
-        <div style={{ padding: 24, background: "#fef2f2", color: "#991b1b", borderRadius: 8, border: "1px solid #fecaca" }}>
+        <div style={{ padding: 24, background: "var(--bg-danger)", color: "var(--color-danger)", borderRadius: 8, border: "1px solid #fecaca" }}>
           {error}
         </div>
       </div>
@@ -96,51 +97,82 @@ export default function DashboardPage() {
   }
 
   const hasAlerts = (data?.openAlerts ?? 0) > 0;
+  const userName = data?.user ? data.user.email.split('@')[0] : "User";
+  const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
     <div className={styles.dashboardContainer}>
-      <div className={styles.header}>
-        <h1 className={styles.pageTitle}>Dashboard Overview</h1>
-        <p className={styles.pageSubtitle}>Monitor global shipment operations, active sensors, and critical alerts.</p>
+      
+      {/* Welcome Header */}
+      <div className={styles.welcomeHeader}>
+        <h1 className={styles.welcomeTitle}>Welcome, {loading ? "..." : userName}</h1>
+        <p className={styles.welcomeSubtitle}>ColdChain Traceability - {currentDate}</p>
       </div>
 
+      {/* Start Here Banner (Primary Overview) */}
+      <div className={styles.startHereBanner}>
+        <div className={styles.startHereTop}>
+          <div>
+            <div className={styles.startHereTitle}>System Overview</div>
+            <h2 className={styles.startHereMetric}>
+              {loading ? "..." : `${data?.activeShipments} Shipments in Transit`}
+            </h2>
+            <p className={styles.startHereDesc}>
+              {loading 
+                ? "Loading system status..." 
+                : hasAlerts 
+                  ? `Attention required: ${data?.openAlerts} open alerts detected across active shipments.` 
+                  : "All active shipments are healthy and within required thresholds."}
+            </p>
+          </div>
+          <Link href="/shipments">
+            <button className={styles.startHereAction}>View Shipments</button>
+          </Link>
+        </div>
+        
+        {/* Simple inline progress indicator style for visual fill */}
+        <div style={{ display: 'flex', gap: '2px', height: '6px', width: '100%', marginTop: '8px' }}>
+          <div style={{ flex: 1, background: hasAlerts ? 'var(--color-warning)' : '#111111', borderRadius: '4px' }}></div>
+          <div style={{ flex: 3, background: 'var(--bg-neutral)', borderRadius: '4px' }}></div>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
       <div className={styles.statsGrid}>
-        <DashboardCard 
-          title="Total Products" 
-          value={data?.totalProducts ?? 0} 
-          icon="📦" 
-          loading={loading}
-        />
-        <DashboardCard 
-          title="Total Batches" 
-          value={data?.totalBatches ?? 0} 
-          icon="🏭" 
-          loading={loading}
-        />
-        <DashboardCard 
-          title="Active Shipments" 
-          value={data?.activeShipments ?? 0} 
-          icon="🚚" 
-          trend="In Transit"
-          loading={loading}
-        />
-        <DashboardCard 
-          title="Open Alerts" 
-          value={data?.openAlerts ?? 0} 
-          icon="⚠️"
-          trend={hasAlerts ? "Action Required" : "All Clear"}
-          type={hasAlerts ? "error" : "default"}
-          loading={loading}
-        />
-        <DashboardCard 
-          title="Active Sensors" 
-          value={data?.totalSensors ?? 0} 
-          icon="🌡️" 
-          loading={loading}
-        />
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <span className={styles.cardTitle}>Total Products</span>
+          </div>
+          <div className={styles.cardBody}>
+            <div className={styles.cardValue}>{loading ? "-" : data?.totalProducts}</div>
+          </div>
+          <div className={styles.cardFooter}>Master Data</div>
+        </div>
+
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <span className={styles.cardTitle}>Total Batches</span>
+          </div>
+          <div className={styles.cardBody}>
+            <div className={styles.cardValue}>{loading ? "-" : data?.totalBatches}</div>
+          </div>
+          <div className={styles.cardFooter}>Master Data</div>
+        </div>
+
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <span className={styles.cardTitle}>Active Sensors</span>
+          </div>
+          <div className={styles.cardBody}>
+            <div className={styles.cardValue}>{loading ? "-" : data?.totalSensors}</div>
+          </div>
+          <div className={styles.cardFooter}>Hardware Devices</div>
+        </div>
       </div>
 
+      {/* Activity Columns */}
       <div className={styles.activitySection}>
+        {/* Events Column */}
         <div className={styles.feedContainer}>
           <h2 className={styles.feedTitle}>Recent Shipment Events</h2>
           {loading ? (
@@ -157,19 +189,16 @@ export default function DashboardPage() {
                 <Link key={event.id} href={`/shipments/${event.shipmentId}`} className={styles.linkItem}>
                   <div className={styles.feedItem}>
                     <div className={styles.feedHeader}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <span className={styles.feedType}>{event.event_type}</span>
-                      </div>
+                      <span className={styles.feedType}>{event.event_type}</span>
                       <span className={styles.feedTime}>
                         {new Date(event.occurred_at).toLocaleDateString()} <br/>
                         {new Date(event.occurred_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </span>
                     </div>
                     <div className={styles.feedDesc}>
-                      <span style={{ fontWeight: 500, color: "#334155" }}>Shipment #{event.shipmentId}</span>
+                      <span style={{ fontWeight: 600 }}>Shipment #{event.shipmentId}</span>
                       <br/>
-                      <span style={{ color: "#94a3b8" }}>📍</span> {event.location || 'Location unspecified'}
-                      {event.description && <div style={{ marginTop: 4, padding: 8, background: "rgba(255,255,255,0.6)", borderRadius: 6 }}>{event.description}</div>}
+                      <span style={{ color: "var(--text-secondary)" }}>{event.location || 'Location unspecified'}</span>
                     </div>
                   </div>
                 </Link>
@@ -178,6 +207,7 @@ export default function DashboardPage() {
           )}
         </div>
 
+        {/* Alerts Column */}
         <div className={styles.feedContainer}>
           <h2 className={styles.feedTitle}>Recent Alerts</h2>
           {loading ? (
@@ -200,10 +230,9 @@ export default function DashboardPage() {
                   <div className={feedClass}>
                     <div className={styles.feedHeader}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <span className={styles.feedType} style={{ color: isCritical ? '#991b1b' : isHigh ? '#9a3412' : '#854d0e' }}>
+                        <span className={styles.feedType} style={{ color: isCritical ? 'var(--color-danger)' : isHigh ? '#9a3412' : '#854d0e' }}>
                           {alert.severity} Alert
                         </span>
-                        <Badge status={alert.status === 'OPEN' ? 'error' : alert.status === 'ACKNOWLEDGED' ? 'warning' : 'default'}>{alert.status}</Badge>
                       </div>
                       <span className={styles.feedTime}>
                         {new Date(alert.detected_at).toLocaleDateString()} <br/>
@@ -211,14 +240,9 @@ export default function DashboardPage() {
                       </span>
                     </div>
                     <div className={styles.feedDesc}>
-                      <div style={{ display: "flex", gap: 16, marginBottom: 8, fontWeight: 500, color: "#334155" }}>
-                        <span>Shipment #{alert.shipmentId}</span>
-                        <span>Sensor {alert.sensor_id}</span>
-                      </div>
-                      <div style={{ background: "rgba(255,255,255,0.5)", padding: 8, borderRadius: 6 }}>
-                        <span style={{ color: "#64748b" }}>Latest Temp:</span> <strong>{alert.latest_temperature}°C</strong>
-                        {alert.message && <div style={{ marginTop: 4 }}>{alert.message}</div>}
-                      </div>
+                      <div style={{ fontWeight: 600 }}>Shipment #{alert.shipmentId} &middot; Sensor {alert.sensor_id}</div>
+                      <div>Latest Temp: <strong>{alert.latest_temperature}°C</strong></div>
+                      {alert.message && <div style={{ marginTop: 4, color: "var(--text-secondary)" }}>{alert.message}</div>}
                     </div>
                   </div>
                 </Link>
