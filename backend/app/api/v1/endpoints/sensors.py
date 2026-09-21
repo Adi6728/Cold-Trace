@@ -17,8 +17,10 @@ def create_sensor(
     current_user: User = Depends(get_current_user),
 ) -> SensorResponse:
     """Create a new sensor and link it to a shipment."""
-    # In a real app, we might check if user's organization is allowed to add sensors to this shipment.
-    return SensorService.create_sensor(db=db, sensor_in=sensor_in)
+    from app.core.permissions import UserRole
+    if current_user.role not in {UserRole.ADMIN, UserRole.MANUFACTURER, UserRole.LOGISTICS, UserRole.WAREHOUSE, UserRole.HOSPITAL}:
+        raise HTTPException(status_code=403, detail="Insufficient permissions.")
+    return SensorService.create_sensor(db=db, sensor_in=sensor_in, current_user=current_user)
 
 
 @router.get("/", response_model=list[SensorResponse])

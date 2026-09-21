@@ -18,15 +18,20 @@ class UserRole(str, Enum):
     AUDITOR = "AUDITOR"
     USER = "USER"
 
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.orm import Session
+from app.database.session import get_db
 
-def _get_current_user():
-    from app.core.security import get_current_user
-
-    return get_current_user()
-
+bearer_scheme = HTTPBearer(auto_error=False)
 
 def require_roles(*allowed_roles: UserRole):
-    def dependency(current_user: "User" = Depends(_get_current_user)) -> "User":
+    def dependency(
+        credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+        db: Session = Depends(get_db),
+    ) -> "User":
+        from app.core.security import get_current_user
+        current_user = get_current_user(credentials, db)
+        
         if current_user.role not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

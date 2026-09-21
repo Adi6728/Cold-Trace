@@ -23,6 +23,6 @@ def list_custody_transfers_endpoint(shipment_id: int, db: Session = Depends(get_
 @router.post("/shipments/{shipment_id}/custody", response_model=CustodyTransferRead, status_code=status.HTTP_201_CREATED)
 def create_custody_transfer_endpoint(shipment_id: int, payload: CustodyTransferCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> CustodyTransfer:
     shipment = get_shipment_for_user(db, current_user, shipment_id)
-    if current_user.role not in {UserRole.ADMIN, UserRole.LOGISTICS, UserRole.WAREHOUSE}:
+    if current_user.role not in {UserRole.ADMIN, UserRole.MANUFACTURER, UserRole.LOGISTICS, UserRole.WAREHOUSE}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions.")
     return add_custody_transfer(db, shipment, payload, current_user)

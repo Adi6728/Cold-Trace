@@ -44,6 +44,9 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
   const [custodyDate, setCustodyDate] = useState("");
   const [custodyError, setCustodyError] = useState<string | null>(null);
 
+  const [newSensorCode, setNewSensorCode] = useState("");
+  const [sensorFormError, setSensorFormError] = useState<string | null>(null);
+
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (!token) {
@@ -141,9 +144,14 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
     const token = localStorage.getItem("access_token");
     if (!token || !user) return;
 
+    if (user.role !== "ADMIN" && !user.organization_id) {
+      setCustodyError("You must be part of an organization to transfer custody.");
+      return;
+    }
+
     try {
       const newTransfer = await api.createCustodyTransfer(token, Number(id), {
-        from_organization_id: user.organization_id || user.id,
+        from_organization_id: user.organization_id || 0,
         to_organization_id: Number(toOrgId),
         transferred_at: custodyDate ? new Date(custodyDate).toISOString() : new Date().toISOString(),
         notes: custodyNotes,
@@ -154,6 +162,27 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
       setCustodyDate("");
     } catch (err) {
       setCustodyError(err instanceof Error ? err.message : "Failed to record custody transfer.");
+    }
+  }
+
+  async function handleCreateSensor(e: React.FormEvent) {
+    e.preventDefault();
+    setSensorFormError(null);
+    if (!newSensorCode) return;
+
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    try {
+      const newSensor = await api.createSensor(token, {
+        sensor_code: newSensorCode,
+        shipment_id: Number(id),
+        status: "ACTIVE"
+      });
+      setSensor(newSensor);
+      setNewSensorCode("");
+    } catch (err) {
+      setSensorFormError(err instanceof Error ? err.message : "Failed to provision sensor.");
     }
   }
 
@@ -195,8 +224,9 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
 
   const canCreateEvent = user && canPerformAction(user.role, "CREATE_SHIPMENT_EVENT");
   const canCreateCustody = user && canPerformAction(user.role, "CREATE_CUSTODY_TRANSFER");
+  const canCreateSensor = user && canPerformAction(user.role, "CREATE_SENSOR");
   const canManageAlerts = user && canPerformAction(user.role, "MANAGE_ALERTS");
-  const showControls = canCreateEvent || canCreateCustody;
+  const showControls = canCreateEvent || canCreateCustody || canCreateSensor;
 
   return (
     <main style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 32px", display: "flex", flexDirection: "column", gap: 24, background: "var(--bg-page)", minHeight: "100vh" }}>
@@ -272,7 +302,20 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
             </div>
             
             {!sensor ? (
-               <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>No sensor linked to this shipment.</p>
+               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                 <p style={{ color: "var(--text-secondary)", fontSize: 14, margin: 0 }}>No sensor linked to this shipment.</p>
+                 {canCreateSensor && (
+                   <div style={{ background: "var(--bg-page)", padding: 16, borderRadius: 8, border: "1px solid #cbd5e1" }}>
+                     <h3 style={{ marginTop: 0, fontSize: 14, color: "var(--text-primary)", marginBottom: 12 }}>Register Sensor</h3>
+                     <form onSubmit={handleCreateSensor} className={formStyles.form} style={{ gap: 12 }}>
+                       {sensorFormError && <div className={formStyles.error}>{sensorFormError}</div>}
+                       <input required placeholder="Sensor Code (e.g. SN-12345)" value={newSensorCode} onChange={e => setNewSensorCode(e.target.value)} className={formStyles.input} />
+                       <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Status will be ACTIVE by default.</div>
+                       <button type="submit" className={formStyles.button} style={{ background: "#2563eb", border: "1px solid #1d4ed8" }}>Attach Sensor</button>
+                     </form>
+                   </div>
+                 )}
+               </div>
             ) : readings.length === 0 ? (
                <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>No readings available from this sensor.</p>
             ) : (

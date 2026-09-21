@@ -12,10 +12,9 @@ from app.schemas.sensors import SensorCreate, TelemetryPayload
 
 class SensorService:
     @staticmethod
-    def create_sensor(db: Session, sensor_in: SensorCreate) -> Sensor:
-        shipment = db.query(Shipment).filter(Shipment.id == sensor_in.shipment_id).first()
-        if not shipment:
-            raise HTTPException(status_code=404, detail="Shipment not found")
+    def create_sensor(db: Session, sensor_in: SensorCreate, current_user: User) -> Sensor:
+        from app.services.shipment_service import get_shipment_for_user
+        shipment = get_shipment_for_user(db, current_user, sensor_in.shipment_id)
 
         existing_sensor = db.query(Sensor).filter(Sensor.sensor_code == sensor_in.sensor_code).first()
         if existing_sensor:

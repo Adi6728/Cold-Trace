@@ -283,7 +283,27 @@ export const api = {
     return apiRequest<Sensor[]>(url, { token });
   },
   getSensor: (token: string, id: number) => apiRequest<Sensor>(`/api/v1/sensors/${id}`, { token }),
+  createSensor: (token: string, payload: { sensor_code: string; shipment_id: number; status: string }) =>
+    apiRequest<Sensor>("/api/v1/sensors/", {
+      token,
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   getSensorReadings: (token: string, id: number) => apiRequest<SensorReading[]>(`/api/v1/sensors/${id}/readings`, { token }),
+  
+  // IoT Simulation
+  getSimulationStatus: (token: string, sensorId: number) => 
+    apiRequest<{status: string, mode: string}>(`/api/v1/sensors/${sensorId}/simulation/status`, { token }),
+  startSimulation: (token: string, sensorId: number) => 
+    apiRequest<{status: string, mode: string}>(`/api/v1/sensors/${sensorId}/simulation/start`, { token, method: "POST" }),
+  stopSimulation: (token: string, sensorId: number) => 
+    apiRequest<{status: string, mode: string}>(`/api/v1/sensors/${sensorId}/simulation/stop`, { token, method: "POST" }),
+  setSimulationMode: (token: string, sensorId: number, mode: string) => 
+    apiRequest<{status: string, mode: string}>(`/api/v1/sensors/${sensorId}/simulation/mode`, { 
+      token, 
+      method: "POST", 
+      body: JSON.stringify({ mode }) 
+    }),
 
   // Alerts
   getShipmentAlerts: (token: string, shipmentId: number) =>

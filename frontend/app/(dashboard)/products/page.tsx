@@ -66,12 +66,20 @@ export default function ProductsPage() {
     const token = localStorage.getItem("access_token");
     if (!token || !user) return;
 
+    if (user.role !== "ADMIN" && !user.organization_id) {
+      setFormError("You must be part of an organization to register a product.");
+      return;
+    }
+
+    // For ADMIN, we might need a separate field for manufacturer_id, but for now we fallback safely or use 0
+    const manufacturerId = user.organization_id || 0;
+
     setIsSubmitting(true);
     try {
       const newProduct = await api.createProduct(token, {
         name,
         description,
-        manufacturer_id: user.organization_id || user.id, // Fallback if org missing
+        manufacturer_id: manufacturerId,
         storage_min_temp: minTemp,
         storage_max_temp: maxTemp,
       });

@@ -4,8 +4,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, Sensor, SensorReading } from "@/lib/api";
+import { canPerformAction } from "@/lib/rbac";
 import dashboardStyles from "../../../components/Dashboard.module.css";
 import tableStyles from "../../../components/Table.module.css";
+import formStyles from "../../../components/Form.module.css";
 import Badge from "../../../components/Badge";
 
 export default function SensorDetailPage({ params }: { params: { id: string } }) {
@@ -17,6 +19,10 @@ export default function SensorDetailPage({ params }: { params: { id: string } })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [simulatorStatus, setSimulatorStatus] = useState<string>("STOPPED");
+  const [simulatorMode, setSimulatorMode] = useState<string>("NORMAL");
+  const [canControl, setCanControl] = useState(false);
+
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (!token) {
@@ -25,12 +31,17 @@ export default function SensorDetailPage({ params }: { params: { id: string } })
     }
 
     Promise.all([
+      api.me(token),
       api.getSensor(token, Number(id)),
-      api.getSensorReadings(token, Number(id))
+      api.getSensorReadings(token, Number(id)),
+      api.getSimulationStatus(token, Number(id)).catch(() => ({ status: "STOPPED", mode: "NORMAL" }))
     ])
-      .then(([sensorData, readingsData]) => {
+      .then(([userData, sensorData, readingsData, simData]) => {
+        setCanControl(canPerformAction(userData.role, "CREATE_SENSOR"));
         setSensor(sensorData);
         setReadings(readingsData);
+        setSimulatorStatus(simData.status);
+        setSimulatorMode(simData.mode);
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : "Failed to load sensor details.");
@@ -39,6 +50,38 @@ export default function SensorDetailPage({ params }: { params: { id: string } })
         setLoading(false);
       });
   }, [id, router]);
+
+  useEffect(() => {
+    if (simulatorStatus !== "RUNNING") return;
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    const interval = setInterval(() => {
+      api.getSensorReadings(token, Number(id)).then(setReadings).catch(console.error);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [simulatorStatus, id]);
+
+  async function handleAction(action: "start" | "stop" | "mode", payload?: string) {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    try {
+      if (action === "start") {
+        const res = await api.startSimulation(token, Number(id));
+        setSimulatorStatus(res.status);
+        setSimulatorMode(res.mode);
+      } else if (action === "stop") {
+        const res = await api.stopSimulation(token, Number(id));
+        setSimulatorStatus(res.status);
+        setSimulatorMode(res.mode);
+      } else if (action === "mode" && payload) {
+        const res = await api.setSimulationMode(token, Number(id), payload);
+        setSimulatorStatus(res.status);
+        setSimulatorMode(res.mode);
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Action failed");
+    }
+  }
 
   if (loading) {
     return <main className={dashboardStyles.dashboardContainer} style={{ padding: 32 }}>Loading sensor details...</main>;
@@ -107,6 +150,50 @@ export default function SensorDetailPage({ params }: { params: { id: string } })
             )}
           </div>
         </div>
+
+        {canControl && (
+          <div className={dashboardStyles.feedContainer}>
+            <h2 className={dashboardStyles.feedTitle}>IoT Simulation Controls</h2>
+            <div style={{ background: "var(--bg-page)", padding: 16, borderRadius: 8, border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--text-secondary)" }}>Status:</span>
+                <Badge status={simulatorStatus === "RUNNING" ? "active" : "default"}>{simulatorStatus}</Badge>
+              </div>
+              
+              <div style={{ display: "flex", gap: 8 }}>
+                {simulatorStatus !== "RUNNING" ? (
+                  <button onClick={() => handleAction("start")} style={{ flex: 1, padding: "8px 16px", background: "var(--color-success)", color: "white", border: "none", borderRadius: 6, fontWeight: 500, cursor: "pointer" }}>
+                    Start Simulation
+                  </button>
+                ) : (
+                  <button onClick={() => handleAction("stop")} style={{ flex: 1, padding: "8px 16px", background: "var(--color-danger)", color: "white", border: "none", borderRadius: 6, fontWeight: 500, cursor: "pointer" }}>
+                    Stop Simulation
+                  </button>
+                )}
+              </div>
+
+              {simulatorStatus === "RUNNING" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
+                  <span style={{ fontSize: "13px", color: "var(--text-secondary)", fontWeight: 500 }}>Operating Mode</span>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button 
+                      onClick={() => handleAction("mode", "NORMAL")} 
+                      disabled={simulatorMode === "NORMAL"}
+                      style={{ flex: 1, padding: "6px 12px", background: simulatorMode === "NORMAL" ? "#3b82f6" : "#f1f5f9", color: simulatorMode === "NORMAL" ? "white" : "#475569", border: "1px solid #cbd5e1", borderRadius: 6, cursor: simulatorMode === "NORMAL" ? "default" : "pointer" }}>
+                      NORMAL
+                    </button>
+                    <button 
+                      onClick={() => handleAction("mode", "EXCURSION")} 
+                      disabled={simulatorMode === "EXCURSION"}
+                      style={{ flex: 1, padding: "6px 12px", background: simulatorMode === "EXCURSION" ? "#f59e0b" : "#f1f5f9", color: simulatorMode === "EXCURSION" ? "white" : "#475569", border: "1px solid #cbd5e1", borderRadius: 6, cursor: simulatorMode === "EXCURSION" ? "default" : "pointer" }}>
+                      EXCURSION
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className={tableStyles.tableContainer} style={{ flex: "1 1 100%", margin: 0 }}>
           <h2 className={tableStyles.tableTitle} style={{ marginBottom: 20 }}>Telemetry History</h2>

@@ -13,6 +13,7 @@ from app.api.v1.endpoints.custody import router as custody_router
 from app.api.v1.endpoints.products import router as products_router
 from app.api.v1.endpoints.shipments import router as shipments_router
 from app.api.v1.endpoints.sensors import router as sensors_router
+from app.api.v1.endpoints.simulation import router as simulation_router
 from app.api.v1.endpoints.alerts import router as alerts_router
 from app.api.v1.endpoints.public import router as public_router
 from app.core.mqtt import start_mqtt, stop_mqtt
@@ -38,6 +39,7 @@ app.include_router(batches_router)
 app.include_router(shipments_router)
 app.include_router(custody_router)
 app.include_router(sensors_router)
+app.include_router(simulation_router)
 app.include_router(alerts_router)
 app.include_router(public_router, prefix="/api/v1/public")
 

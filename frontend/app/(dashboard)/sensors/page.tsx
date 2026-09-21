@@ -69,15 +69,16 @@ export default function SensorsPage() {
                 <th>Shipment Reference</th>
                 <th>Status</th>
                 <th>Registered</th>
+                <th style={{ textAlign: "right" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {sensors.map((s) => (
                 <tr key={s.id}>
                   <td>
-                    <Link href={`/sensors/${s.id}`} className={tableStyles.link} style={{ fontWeight: 600 }}>
+                    <div style={{ fontWeight: 600 }}>
                       {s.sensor_code}
-                    </Link>
+                    </div>
                     <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>ID: #{s.id}</div>
                   </td>
                   <td>
@@ -93,6 +94,24 @@ export default function SensorsPage() {
                     <Badge status={s.status === 'ACTIVE' ? 'active' : 'default'}>{s.status}</Badge>
                   </td>
                   <td style={{ color: "var(--text-secondary)" }}>{new Date(s.created_at).toLocaleDateString()}</td>
+                  <td style={{ textAlign: "right" }}>
+                    <Link
+                      href={`/sensors/${s.id}`}
+                      style={{
+                        display: "inline-block",
+                        padding: "6px 12px",
+                        background: "#f1f5f9",
+                        color: "#475569",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "6px",
+                        fontWeight: 500,
+                        textDecoration: "none",
+                        fontSize: "14px"
+                      }}
+                    >
+                      View Details
+                    </Link>
+                  </td>
                 </tr>
               ))}
             </tbody>

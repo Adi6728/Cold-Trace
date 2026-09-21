@@ -18,6 +18,9 @@ export default function ShipmentsPage() {
   const [batchId, setBatchId] = useState<number | "">("");
   const [destOrgId, setDestOrgId] = useState<number | "">("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [addSensor, setAddSensor] = useState(false);
+  const [sensorCode, setSensorCode] = useState("");
+  const [sensorFormError, setSensorFormError] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -49,24 +52,51 @@ export default function ShipmentsPage() {
   async function handleCreateShipment(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
+    setSensorFormError(null);
     
     if (!batchId || !destOrgId) {
       setFormError("Please fill out all required fields.");
+      return;
+    }
+    if (addSensor && !sensorCode) {
+      setFormError("Sensor Code is required when adding a sensor.");
       return;
     }
 
     const token = localStorage.getItem("access_token");
     if (!token || !user) return;
 
+    if (user.role !== "ADMIN" && !user.organization_id) {
+      setFormError("You must be part of an organization to create a shipment.");
+      return;
+    }
+
     try {
       const newShipment = await api.createShipment(token, {
         batch_id: Number(batchId),
-        origin_organization_id: user.organization_id || user.id, // using user's org
+        origin_organization_id: user.organization_id || 0,
         destination_organization_id: Number(destOrgId),
       });
+
+      if (addSensor && sensorCode) {
+        try {
+          await api.createSensor(token, {
+            sensor_code: sensorCode,
+            shipment_id: newShipment.id,
+            status: "ACTIVE"
+          });
+        } catch (sensorErr) {
+          setSensorFormError(sensorErr instanceof Error ? sensorErr.message : "Shipment created, but failed to create sensor.");
+          setShipments([...shipments, newShipment]);
+          return;
+        }
+      }
+
       setShipments([...shipments, newShipment]);
       setBatchId("");
       setDestOrgId("");
+      setAddSensor(false);
+      setSensorCode("");
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Failed to create shipment.");
     }
@@ -107,6 +137,20 @@ export default function ShipmentsPage() {
             <label>Destination Organization ID</label>
             <input required type="number" min="1" value={destOrgId} onChange={(e) => setDestOrgId(e.target.value === "" ? "" : Number(e.target.value))} style={{ padding: 8, borderRadius: 6, border: "1px solid #d1d5db" }} />
           </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+            <input type="checkbox" id="addSensorCheck" checked={addSensor} onChange={(e) => setAddSensor(e.target.checked)} />
+            <label htmlFor="addSensorCheck" style={{ margin: 0, fontWeight: 500, cursor: "pointer" }}>Add sensor to this shipment</label>
+          </div>
+
+          {addSensor && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, background: "#f8fafc", padding: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}>
+              {sensorFormError && <div style={{ color: "var(--color-danger)", fontSize: 13, marginBottom: 8 }}>{sensorFormError}</div>}
+              <label>Sensor Code</label>
+              <input required={addSensor} placeholder="e.g. SN-12345" value={sensorCode} onChange={(e) => setSensorCode(e.target.value)} style={{ padding: 8, borderRadius: 6, border: "1px solid #d1d5db" }} />
+              <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>Status will be set to ACTIVE by default.</div>
+            </div>
+          )}
 
           <button type="submit" style={{ padding: "10px 14px", borderRadius: 8, border: "none", background: "#2563eb", color: "var(--bg-surface)", cursor: "pointer", fontWeight: "bold" }}>
             Create Shipment
