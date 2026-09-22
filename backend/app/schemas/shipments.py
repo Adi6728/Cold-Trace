@@ -42,8 +42,25 @@ class ShipmentUpdate(BaseModel):
     delivered_at: datetime | None = None
 
 
+class ShipmentProductRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    manufacturer_id: int
+    storage_min_temp: float
+    storage_max_temp: float
+
+class ShipmentBatchRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    product_id: int
+    batch_number: str
+    quantity: int
+    product: ShipmentProductRead | None = None
+
 class ShipmentRead(ShipmentBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     created_at: datetime
+    batch: ShipmentBatchRead | None = None

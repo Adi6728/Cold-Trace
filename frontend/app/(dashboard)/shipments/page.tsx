@@ -34,7 +34,12 @@ export default function ShipmentsPage() {
       const isPublicUser = userData.role === 'USER' && !userData.organization_id;
       return Promise.all([
         isPublicUser ? api.getPublicShipments(token) : api.getShipments(token),
-        api.getBatches(token)
+        api.getBatches(token).catch(err => {
+          if (err.message?.includes("Insufficient permissions")) {
+            return [];
+          }
+          throw err;
+        })
       ]);
     })
       .then(([shipmentsData, batchesData]) => {
@@ -178,7 +183,9 @@ export default function ShipmentsPage() {
               {shipments.map((s) => (
                 <tr key={s.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
                   <td style={{ padding: 12 }}>{s.id}</td>
-                  <td style={{ padding: 12 }}>{s.batch_id}</td>
+                  <td style={{ padding: 12 }}>
+                    {s.batch ? `${s.batch.batch_number} (ID: ${s.batch_id})` : s.batch_id}
+                  </td>
                   <td style={{ padding: 12 }}>{s.origin_organization_id}</td>
                   <td style={{ padding: 12 }}>{s.destination_organization_id}</td>
                   <td style={{ padding: 12 }}>{s.status}</td>

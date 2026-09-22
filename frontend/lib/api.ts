@@ -73,6 +73,7 @@ export type Shipment = {
   expected_delivery_at?: string;
   delivered_at?: string;
   created_at: string;
+  batch?: Batch & { product?: Product };
 };
 
 export type ShipmentCreate = {

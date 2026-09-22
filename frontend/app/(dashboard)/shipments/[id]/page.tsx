@@ -65,13 +65,20 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
 
         // Load Batch and Product
         let productData: Product | null = null;
+        let batchData: Batch | null = null;
         try {
-          const batchData = await api.getBatch(token!, shipmentData.batch_id);
+          batchData = await api.getBatch(token!, shipmentData.batch_id);
           setBatch(batchData);
           productData = await api.getProduct(token!, batchData.product_id);
           setProduct(productData);
         } catch (e) {
-          console.warn("Failed to load batch or product", e);
+          console.warn("Failed to load batch or product, falling back to embedded data", e);
+          if (shipmentData.batch) {
+             setBatch(shipmentData.batch as Batch);
+             if (shipmentData.batch.product) {
+                setProduct(shipmentData.batch.product as Product);
+             }
+          }
         }
 
         // Parallel load of events, custody, alerts, blockchain
